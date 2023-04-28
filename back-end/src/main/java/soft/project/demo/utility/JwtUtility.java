@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -57,6 +58,9 @@ public class JwtUtility implements Serializable {
 	
 	public String generateToken(UserDetails userDetails) {
 		Map<String, Object> claims = new HashMap<>();
+		claims.put("authorities", userDetails.getAuthorities().stream()
+											 .map(auth -> auth.getAuthority())
+											 .collect(Collectors.toList()));
 		return doGenerateToken(claims, userDetails.getUsername());
 	}
 
