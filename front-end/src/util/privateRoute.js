@@ -12,11 +12,11 @@ const PrivateRoute = (props) => {
 
     if(user && user.jwt) {
         console.log("PrivateRoute has user jwt: ", user.jwt)
-        ajax(`${apiEndpoint}/api/auth/validate`, "GET", user.jwt)
+        ajax(`${apiEndpoint}/api/auth/validate`, "get", user.jwt)
         .then((isValid) => {
             setIsValid(isValid);
             setIsLoading(false);
-        });
+        })
     } else {
         console.log("PrivateRoute does not have user, navigating to /login")
         return <Navigate to="/login" />;

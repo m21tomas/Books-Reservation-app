@@ -1,12 +1,12 @@
 import React from "react";
-import { useLocalState } from "../util/useLocalStorage";
+import { useUser } from "../services/userProvider";
 import jwt_decode from "jwt-decode";
 import UserNavBar from "../Navbars/UserNavBar";
 import { Container, Table } from "react-bootstrap";
 
 const AdminDashboard = () => {
-  const [jwt, setJwt] = useLocalState("", "jwt");
-  var decoded = jwt_decode(jwt);
+  const user = useUser();
+  var decoded = jwt_decode(user.jwt);
   const loginDate = new Intl.DateTimeFormat("lt-LT", {
     year: "numeric",
     month: "2-digit",

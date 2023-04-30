@@ -80,7 +80,7 @@ public class AuthController {
 		LOG.info("/validate endpoint reached");
 		try {
 			Boolean isTokenValid = jwtUtil.validateToken(token, user);
-			LOG.info("VALIDATE successful, \n response boolean: {}", isTokenValid.toString());
+			LOG.info("VALIDATE successful, response boolean: {}", isTokenValid.toString());
 			return ResponseEntity.ok(isTokenValid);
 		}
 		catch (ExpiredJwtException e) {

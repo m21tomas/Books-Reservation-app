@@ -4,7 +4,6 @@ import { Button, Col, Container, Row, Form } from "react-bootstrap";
 import apiEndpoint from "../services/endpoint";
 import { useUser } from "../services/userProvider";
 import NavBar from "../Navbars/UserNavBar";
-import ajax from "../services/fetchService";
 
 const Login = () => {
   const user = useUser();
@@ -56,7 +55,6 @@ const Login = () => {
             <Form.Group className="mb-3" controlId="username">
               <Form.Label className="fs-4">Username</Form.Label>
               <Form.Control
-                id="username"
                 type="text"
                 size="lg"
                 placeholder="username"

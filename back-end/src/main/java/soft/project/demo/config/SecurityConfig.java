@@ -61,7 +61,7 @@ public class SecurityConfig {
 			.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);	
 		return http.build();
 		*/
-		/*
+		
 		return http.cors(cors -> corsFilter()).csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(auth -> auth
 	            .requestMatchers("/api/auth/**", "/api/verify").permitAll()
@@ -72,12 +72,14 @@ public class SecurityConfig {
 				}))
 				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)	
 	            .build();
-	   */
+	   
+		/*
 		return http.cors(cors -> corsFilter()).csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(auth -> auth
 			            .requestMatchers("/**").permitAll()
 			            )
                 .build();
+        */
 	}
 
     // Used by Spring Security if CORS is enabled.
