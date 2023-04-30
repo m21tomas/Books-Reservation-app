@@ -1,4 +1,4 @@
-async function ajax(url, requestMethod, jwt, requestBody) {
+function ajax(url, requestMethod, jwt, requestBody) {
     const fetchData = {
       headers: {
         "Content-Type": "application/json",
@@ -14,15 +14,16 @@ async function ajax(url, requestMethod, jwt, requestBody) {
       fetchData.body = JSON.stringify(requestBody);
     }
   
-    const response = await fetch(url, fetchData);
-    if (response.status === 200) {
+    return fetch(url, fetchData).then((response) => {
+      if (response.status === 200) {
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.indexOf("application/json") !== -1) {
-            return response.json();
+          return response.json();
         } else {
-            return response.text();
+          return response.text();
         }
-    }
+      }
+    });
   }
   
   export default ajax;

@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
-import { useLocalState } from './useLocalStorage';
+import { useUser } from '../services/userProvider';
 import { Navigate } from 'react-router-dom';
 import apiEndpoint from '../services/endpoint';
 import ajax from '../services/fetchService';
 
-const PrivateRoute = ({children}) => {
-    const [jwt, setJwt] = useLocalState("", "jwt");
+const PrivateRoute = (props) => {
+    const user = useUser();
     const [isLoading, setIsLoading] = useState(true);
     const [isValid, setIsValid] = useState(null);
+    const { children } = props;
 
-    if(jwt) {
-        ajax(`${apiEndpoint}/api/auth/validate?token=${jwt}`, "GET", jwt)
+    if(user && user.jwt) {
+        console.log("PrivateRoute has user jwt: ", user.jwt)
+        ajax(`${apiEndpoint}/api/auth/validate`, "GET", user.jwt)
         .then((isValid) => {
             setIsValid(isValid);
             setIsLoading(false);
         });
     } else {
+        console.log("PrivateRoute does not have user, navigating to /login")
         return <Navigate to="/login" />;
     }
 

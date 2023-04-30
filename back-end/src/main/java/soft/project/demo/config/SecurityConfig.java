@@ -10,7 +10,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.web.DefaultSecurityFilterChain;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -31,9 +31,9 @@ public class SecurityConfig {
 	
 	@Autowired
 	CustomPasswordEncoder passwordEncoder;
-	
-	@Bean
-	public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+
+    @Bean
+    AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
 	     return authenticationConfiguration.getAuthenticationManager();
 	}
 	
@@ -43,7 +43,8 @@ public class SecurityConfig {
 	}
 	
 	@Bean
-	protected DefaultSecurityFilterChain configureAuthorization (HttpSecurity http) throws Exception{		
+	protected SecurityFilterChain configureAuthorization (HttpSecurity http) throws Exception{		
+		/*
 		http.cors().and().csrf().disable()
 		    .authorizeHttpRequests()
 		    .requestMatchers("/api/auth/**", "/api/verify").permitAll()
@@ -59,11 +60,29 @@ public class SecurityConfig {
 			.and()
 			.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);	
 		return http.build();
+		*/
+		/*
+		return http.cors(cors -> corsFilter()).csrf(csrf -> csrf.disable())
+				.authorizeHttpRequests(auth -> auth
+	            .requestMatchers("/api/auth/**", "/api/verify").permitAll()
+	            .anyRequest().authenticated())
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.exceptionHandling(exception -> exception.authenticationEntryPoint((request, response, ex) -> {
+					   response.sendError(HttpServletResponse.SC_UNAUTHORIZED, ex.getMessage());
+				}))
+				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)	
+	            .build();
+	   */
+		return http.cors(cors -> corsFilter()).csrf(csrf -> csrf.disable())
+				.authorizeHttpRequests(auth -> auth
+			            .requestMatchers("/**").permitAll()
+			            )
+                .build();
 	}
-	
-	// Used by Spring Security if CORS is enabled.
+
+    // Used by Spring Security if CORS is enabled.
     @Bean
-    public CorsFilter corsFilter() {
+    CorsFilter corsFilter() {
         UrlBasedCorsConfigurationSource source =
             new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
@@ -71,6 +90,7 @@ public class SecurityConfig {
         config.addAllowedOriginPattern("*");
         config.addAllowedHeader("*");
         config.addExposedHeader("Authorization");
+        config.addExposedHeader("Set-Cookie");
         config.addAllowedMethod("*");
         source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);

@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import "./App.css";
 import { Route, Routes } from "react-router-dom";
 import UserDashboard from "./Dashboard/userDashboard";
@@ -6,15 +7,25 @@ import Login from "./Login";
 import PrivateRoute from "./util/privateRoute";
 import jwt_decode from 'jwt-decode'
 import AdminDashboard from "./Dashboard/adminDashboard";
-import { useLocalState } from "./util/useLocalStorage";
+import { useUser } from "./services/userProvider";
+
 
 function App() {
-  const [jwt, setJwt] = useLocalState("", "jwt");
-  console.log("jwt: ", jwt)
-  var decoded = undefined
-  if(jwt){
-    decoded = jwt_decode(jwt);
-  } 
+  const [roles, setRoles] = useState([]);
+  const user = useUser();
+  
+  useEffect(() => {
+    function getRolesFromJWT() {
+      if (user.jwt) {
+        const decodedJwt = jwt_decode(user.jwt);
+        return decodedJwt.authorities;
+      }
+      return [];
+    }
+    setRoles(getRolesFromJWT());
+  }, [user.jwt]);
+
+  
   
   function pickDashboard (authArray){
     let dash = undefined;
@@ -37,15 +48,13 @@ function App() {
     else return <Homepage />
   }
   
-  return (
+  return ( 
     <Routes>
       <Route
         path="/dashboard"
         element={
           <PrivateRoute>
-            {
-              decoded !== undefined ? pickDashboard(decoded.authorities) : console.log("decoded: ", decoded)
-            }
+              {pickDashboard(roles)}
           </PrivateRoute>
         }
       />

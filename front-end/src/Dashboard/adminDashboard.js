@@ -51,8 +51,8 @@ const AdminDashboard = () => {
           </Table>
           <Table className="beta" style={{ width: "40%" }}>
             <colgroup>
-              <col span="1" style={{ width: "32%" }} />
-              <col span="1" style={{ width: "68%" }} />
+              <col span="1" style={{ width: "24%" }} />
+              <col span="1" style={{ width: "76%" }} />
             </colgroup>
             <tbody>
               <tr>

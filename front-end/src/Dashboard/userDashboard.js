@@ -53,6 +53,30 @@ const UserDashboard = () => {
               </tr>
             </tbody>
           </Table>
+          <Table className="beta" style={{ width: "40%" }}>
+            <colgroup>
+              <col span="1" style={{ width: "24%" }} />
+              <col span="1" style={{ width: "76%" }} />
+            </colgroup>
+            <tbody>
+              <tr>
+                <td>Username:</td>
+                <td>{decoded.sub}</td>
+              </tr>
+              <tr>
+                <td>Role:</td>
+                <td>{decoded.authorities.join(", ")}</td>
+              </tr>
+              <tr>
+                <td>Login date:</td>
+                <td>{loginDate}</td>
+              </tr>
+              <tr>
+                <td>Expiration date:</td>
+                <td>{expiryDate}</td>
+              </tr>
+            </tbody>
+          </Table>
         </div>
       </Container>
     </>
