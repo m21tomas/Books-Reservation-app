@@ -6,7 +6,14 @@ import { Container, Table } from "react-bootstrap";
 
 const UserDashboard = () => {
   const user = useUser();
-  var decoded = jwt_decode(user);
+  var decoded = jwt_decode(user.jwt);
+  console.log("expire opoch time: ", decoded.exp * 1000)
+  const dateTime = new Date(decoded.exp*1000);
+  console.log("Date and time: ", dateTime.toISOString())
+  console.log("Date and time: ", dateTime.toLocaleString('lt-LT', { timeZone: 'Europe/Vilnius' }))
+  console.log("Timezone offset: ", dateTime.getTimezoneOffset())
+  console.log("toIsoString: ", toIsoString(dateTime));
+
   const loginDate = new Intl.DateTimeFormat("lt-LT", {
     year: "numeric",
     month: "2-digit",
@@ -23,6 +30,25 @@ const UserDashboard = () => {
     minute: "2-digit",
     second: "2-digit",
   }).format(decoded.exp * 1000);
+
+  function toIsoString(date) {
+    var tzo = -date.getTimezoneOffset(),
+        dif = tzo >= 0 ? '+' : '-',
+        pad = function(num) {
+            return (num < 10 ? '0' : '') + num;
+        };
+  
+    return date.getFullYear() +
+        '-' + pad(date.getMonth() + 1) +
+        '-' + pad(date.getDate()) +
+        'T' + pad(date.getHours()) +
+        ':' + pad(date.getMinutes()) +
+        ':' + pad(date.getSeconds()) +
+        dif + pad(Math.floor(Math.abs(tzo) / 60)) +
+        ':' + pad(Math.abs(tzo) % 60);
+  }
+
+
   return (
     <>
       <UserNavBar />

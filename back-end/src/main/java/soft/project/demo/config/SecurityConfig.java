@@ -91,8 +91,8 @@ public class SecurityConfig {
         config.setAllowCredentials(true);
         config.addAllowedOriginPattern("*");
         config.addAllowedHeader("*");
-        config.addExposedHeader("Authorization");
         config.addExposedHeader("Set-Cookie");
+        config.addExposedHeader("Authorization");
         config.addAllowedMethod("*");
         source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);

@@ -4,6 +4,8 @@ import { Button, Col, Container, Row, Form } from "react-bootstrap";
 import apiEndpoint from "../services/endpoint";
 import { useUser } from "../services/userProvider";
 import NavBar from "../Navbars/UserNavBar";
+import jwt_decode from "jwt-decode";
+import Cookies from "js-cookie";
 
 const Login = () => {
   const user = useUser();
@@ -11,6 +13,23 @@ const Login = () => {
   const usrRef = useRef();
   const passRef = useRef();
   const [errorMsg, setErrorMsg] = useState(null);
+
+ 
+  function toIsoString(date) {
+    var tzo = -date.getTimezoneOffset(),
+        dif = tzo >= 0 ? '+' : '-',
+        pad = function(num) {
+            return (num < 10 ? '0' : '') + num;
+        };
+    return date.getFullYear() +
+        '-' + pad(date.getMonth() + 1) +
+        '-' + pad(date.getDate()) +
+        'T' + pad(date.getHours()) +
+        ':' + pad(date.getMinutes()) +
+        ':' + pad(date.getSeconds()) +
+        dif + pad(Math.floor(Math.abs(tzo) / 60)) +
+        ':' + pad(Math.abs(tzo) % 60);
+  }
 
   function sendLoginRequest() {
     setErrorMsg("");
@@ -28,6 +47,7 @@ const Login = () => {
     })
       .then((response) => {
         console.log(reqBody);
+        console.log(response.headers);
         if (response.status === 200) return response.text();
         else if (response.status === 401 || response.status === 403) {
           setErrorMsg("Invalid username or password");
@@ -40,12 +60,17 @@ const Login = () => {
       .then((data) => {
         if (data) {
           user.setJwt(data);
+          //document.cookie=`${data}; name=jwt`;
+          let decoded = jwt_decode(data);
+          const expire = new Date(decoded.exp*1000);
+          Cookies.set('jwt', data, {domain: 'localhost', path: '/', expires: new Date(toIsoString(expire))})
           navigate("/dashboard");
         }
       });
     usrRef.current.value = "";
     passRef.current.value = "";
   }
+
   return (
     <>
       <NavBar />

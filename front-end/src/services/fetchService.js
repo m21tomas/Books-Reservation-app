@@ -1,15 +1,16 @@
 function ajax(url, requestMethod, jwt, requestBody) {
+  
   const fetchData = {
     headers: {
       "Content-Type": "application/json",
     },
     method: requestMethod,
+    credentials: 'include'
   };
 
-  if (jwt) {
-    fetchData.headers.Authorization = `Bearer ${jwt}`;
-    //fetchData.headers.Authorization = `jwt=${jwt}`;
-  }
+  // if (jwt) {
+  //   fetchData.headers.Authorization = `Bearer ${jwt}`;
+  // }
 
   if (requestBody) {
     fetchData.body = JSON.stringify(requestBody);
@@ -25,8 +26,7 @@ function ajax(url, requestMethod, jwt, requestBody) {
           return response.text();
         }
       }
-    })
-    .catch((error) => error.json());
+    });
 }
 
 export default ajax;

@@ -11,7 +11,6 @@ const PrivateRoute = (props) => {
     const { children } = props;
 
     if(user && user.jwt) {
-        console.log("PrivateRoute has user jwt: ", user.jwt)
         ajax(`${apiEndpoint}/api/auth/validate`, "get", user.jwt)
         .then((isValid) => {
             setIsValid(isValid);
