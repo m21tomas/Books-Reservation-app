@@ -1,28 +1,14 @@
-import React, { useState } from 'react';
-import { useUser } from '../services/userProvider';
-import { Navigate } from 'react-router-dom';
-import apiEndpoint from '../services/endpoint';
-import ajax from '../services/fetchService';
+import { useUser } from "../services/userProvider";
+import { Navigate } from "react-router-dom";
 
 const PrivateRoute = (props) => {
-    const user = useUser();
-    const [isLoading, setIsLoading] = useState(true);
-    const [isValid, setIsValid] = useState(null);
-    const { children } = props;
+  const user = useUser();
+  const { children } = props;
+  console.log("user.isvalid: ", user.isValid);
 
-    if(user && user.jwt) {
-        ajax(`${apiEndpoint}/api/auth/validate`, "get", user.jwt)
-        .then((isValid) => {
-            setIsValid(isValid);
-            setIsLoading(false);
-        })
-    } else {
-        console.log("PrivateRoute does not have user, navigating to /login")
-        return <Navigate to="/login" />;
-    }
-
-    return isLoading ? (<div>Loading...</div>) : 
-    isValid === true ? (children) : <Navigate to="/login" />
+  if (user.isValid === null && user.jwt) return <div>Loading...</div>;
+  else if (user.isValid) return children;
+  else if (!user.isValid) return <Navigate to="/login" />;
 };
 
 export default PrivateRoute;

@@ -81,7 +81,7 @@ public class AuthController {
 		try {
 			Boolean isTokenValid = jwtUtil.validateToken(token, user);
 			LOG.info("VALIDATE successful, response boolean: {}", isTokenValid.toString());
-			return ResponseEntity.ok(isTokenValid);
+			return new ResponseEntity<Boolean>(isTokenValid, HttpStatus.OK);
 		}
 		catch (ExpiredJwtException e) {
 			LOG.error("VALIDATE failed, token expired \n response exception: {}", e.toString());
