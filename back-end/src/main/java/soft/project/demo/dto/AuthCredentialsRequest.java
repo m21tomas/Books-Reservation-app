@@ -1,4 +1,4 @@
-package soft.project.demo.web.dto;
+package soft.project.demo.dto;
 
 public class AuthCredentialsRequest {
 	

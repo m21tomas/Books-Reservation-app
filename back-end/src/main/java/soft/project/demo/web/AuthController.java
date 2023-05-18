@@ -22,9 +22,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import ch.qos.logback.core.util.Duration;
 import io.jsonwebtoken.ExpiredJwtException;
+import soft.project.demo.dto.AuthCredentialsRequest;
 import soft.project.demo.model.User;
 import soft.project.demo.utility.JwtUtility;
-import soft.project.demo.web.dto.AuthCredentialsRequest;
 
 @RestController
 @RequestMapping("/api/auth")

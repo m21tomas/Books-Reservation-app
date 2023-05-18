@@ -10,9 +10,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import soft.project.demo.dto.UserDTO;
 import soft.project.demo.repository.UserRepository;
 import soft.project.demo.service.UserService;
-import soft.project.demo.web.dto.UserDTO;
 
 
 @Component

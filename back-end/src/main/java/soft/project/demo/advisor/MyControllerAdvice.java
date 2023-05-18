@@ -1,4 +1,4 @@
-package soft.project.demo.exceptionHandling.advisor;
+package soft.project.demo.advisor;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -11,9 +11,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import soft.project.demo.exceptionHandling.exception.EmptyInputException;
-import soft.project.demo.exceptionHandling.exception.ExistingUserException;
-import soft.project.demo.exceptionHandling.exception.NoDataFoundException;
+import soft.project.demo.exception.EmptyInputException;
+import soft.project.demo.exception.ExistingBookCategoryException;
+import soft.project.demo.exception.ExistingUserException;
+import soft.project.demo.exception.NoDataFoundException;
+import soft.project.demo.exception.NonExistingBookCategoryException;
 
 @ControllerAdvice
 public class MyControllerAdvice extends ResponseEntityExceptionHandler {
@@ -43,6 +45,22 @@ public class MyControllerAdvice extends ResponseEntityExceptionHandler {
 		Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("message", el.getMessage());
+		return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+	}
+	
+	@ExceptionHandler(ExistingBookCategoryException.class)
+	public ResponseEntity<Object> handleExistingBookCategoryException(ExistingBookCategoryException el) {
+		Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("message", el.getMessage());
+		return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+	}
+	
+	@ExceptionHandler(NonExistingBookCategoryException.class)
+	public ResponseEntity<Object> handleNonExistingBookCategoryException(NonExistingBookCategoryException mes) {
+		Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("message", mes.getMessage());
 		return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
 	}
 }

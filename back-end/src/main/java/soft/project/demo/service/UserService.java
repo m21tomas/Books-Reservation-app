@@ -15,8 +15,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import soft.project.demo.exceptionHandling.exception.EmptyInputException;
-import soft.project.demo.exceptionHandling.exception.ExistingUserException;
+import soft.project.demo.dto.UserDTO;
+import soft.project.demo.exception.EmptyInputException;
+import soft.project.demo.exception.ExistingUserException;
 import soft.project.demo.model.Authority;
 import soft.project.demo.model.Role;
 import soft.project.demo.model.User;
@@ -24,7 +25,6 @@ import soft.project.demo.model.UserInfo;
 import soft.project.demo.repository.AuthorityRepository;
 import soft.project.demo.repository.UserRepository;
 import soft.project.demo.utility.CustomPasswordEncoder;
-import soft.project.demo.web.dto.UserDTO;
 
 @Service
 public class UserService {

@@ -1,4 +1,4 @@
-package soft.project.demo.exceptionHandling.exception;
+package soft.project.demo.exception;
 
 public class EmptyInputException extends RuntimeException {
 
