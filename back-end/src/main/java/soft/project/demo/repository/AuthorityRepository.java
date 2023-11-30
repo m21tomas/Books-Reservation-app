@@ -4,8 +4,8 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import soft.project.demo.enums.Role;
 import soft.project.demo.model.Authority;
-import soft.project.demo.model.Role;
 
 public interface AuthorityRepository extends JpaRepository<Authority, Integer>{
 

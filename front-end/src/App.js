@@ -42,7 +42,7 @@ function App() {
         }
       }
     }
-
+    console.log("jwt: ", user.jwt);
     if(dash === 0) return <AdminDashboard />
     else if(dash === 1) return <UserDashboard />
     else return <Homepage />

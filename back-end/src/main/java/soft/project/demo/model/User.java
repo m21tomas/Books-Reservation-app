@@ -3,11 +3,13 @@ package soft.project.demo.model;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -35,7 +37,13 @@ public class User implements UserDetails{
 	private String email;
 	
 	@OneToMany(fetch = FetchType.EAGER, mappedBy = "user")
-	private List<Authority> authorities = new ArrayList<>();
+	private List<Authority> authorities = new ArrayList<>();	
+	
+	@OneToMany(mappedBy = "user", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true)
+    private List<Reservation> reservations = new ArrayList<>();
+	
+	@OneToMany(mappedBy = "user")
+    private List<FavoriteBook> favoriteBooks = new ArrayList<>();
 	
 	public User() {}
 
@@ -44,6 +52,36 @@ public class User implements UserDetails{
 		this.username = username;
 		this.password = password;
 		this.email = email;
+	}
+	
+	public void addReservation(Reservation reservation) {
+        reservations.add(reservation);
+        reservation.setUser(this);
+    }
+
+    public void removeReservation(Reservation reservation) {
+        reservations.remove(reservation);
+        reservation.setUser(null);
+    }
+    
+    
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(authorities, email, id, username);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		User other = (User) obj;
+		return Objects.equals(authorities, other.authorities) && Objects.equals(email, other.email)
+				&& Objects.equals(id, other.id) && Objects.equals(username, other.username);
 	}
 
 	public Integer getId() {
@@ -78,6 +116,22 @@ public class User implements UserDetails{
 
 	public void setEmail(String email) {
 		this.email = email;
+	}
+
+	public List<FavoriteBook> getFavoriteBooks() {
+		return favoriteBooks;
+	}
+
+	public void setFavoriteBooks(List<FavoriteBook> favoriteBooks) {
+		this.favoriteBooks = favoriteBooks;
+	}
+
+	public List<Reservation> getReservations() {
+		return reservations;
+	}
+
+	public void setReservations(List<Reservation> reservations) {
+		this.reservations = reservations;
 	}
 
 	@Override

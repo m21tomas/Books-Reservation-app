@@ -8,9 +8,9 @@ function ajax(url, requestMethod, jwt, requestBody) {
     credentials: 'include'
   };
 
-  // if (jwt) {
+  //if (jwt) {
   //   fetchData.headers.Authorization = `Bearer ${jwt}`;
-  // }
+   //}
 
   if (requestBody) {
     fetchData.body = JSON.stringify(requestBody);

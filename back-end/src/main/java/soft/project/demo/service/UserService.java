@@ -16,10 +16,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import soft.project.demo.dto.UserDTO;
+import soft.project.demo.enums.Role;
 import soft.project.demo.exception.EmptyInputException;
 import soft.project.demo.exception.ExistingUserException;
+import soft.project.demo.exception.NonExistingUserException;
 import soft.project.demo.model.Authority;
-import soft.project.demo.model.Role;
 import soft.project.demo.model.User;
 import soft.project.demo.model.UserInfo;
 import soft.project.demo.repository.AuthorityRepository;
@@ -62,22 +63,8 @@ public class UserService {
 	 */
 	@Transactional
 	public User createUser(UserDTO userData) {
-		List<String> empty = new ArrayList<>();
-		if(userData.getEmail().isEmpty()) empty.add("email");
-		if(userData.getRoles().isEmpty()) empty.add("roles");
-		if(userData.getPassword().isEmpty()) empty.add("password");
-		if(userData.getUsername().isEmpty()) empty.add("username");
 		
-		if(empty.size() > 0)
-		{
-			String res1 = "";
-			res1= (empty.size()>1) ? "Input fields " : "Input field ";
-			for(int i=0; i<empty.size(); i++) {
-				res1 = (empty.size()-i>1) ? res1.concat(empty.get(i))+" and " : res1.concat(empty.get(i));
-			}
-			res1= (empty.size()>1) ? res1.concat(" are empty.") : res1.concat(" is empty.");
-			throw new EmptyInputException(res1);
-		}
+		checkUserDataFields(userData);
 		
 		User checkUser = userRepo.findByUsername(userData.getUsername()).orElse(null);
 		
@@ -105,6 +92,39 @@ public class UserService {
 		return returnUser;
 	}
 	
+	private static void checkUserDataFields (UserDTO userData) {
+		List<String> empty = new ArrayList<>();
+		if(userData.getEmail().isEmpty()) empty.add("email");
+		if(userData.getRoles().isEmpty()) empty.add("roles");
+		if(userData.getPassword().isEmpty()) empty.add("password");
+		if(userData.getUsername().isEmpty()) empty.add("username");
+		
+		if(empty.size() > 0)
+		{
+			String res1 = "";
+			res1= (empty.size()>1) ? "Input fields " : "Input field ";
+			for(int i=0; i<empty.size(); i++) {
+				res1 = (empty.size()-i>1) ? res1.concat(empty.get(i))+" and " : res1.concat(empty.get(i));
+			}
+			res1= (empty.size()>1) ? res1.concat(" are empty.") : res1.concat(" is empty.");
+			throw new EmptyInputException(res1);
+		}
+	}
+	
+	@Transactional(readOnly = true)
+	public UserInfo findUserById(Integer id) {
+		User foundUser = userRepo.findById(id).orElse(null);
+		UserInfo foundUserDto = null;
+		if(foundUser == null) {
+			throw new NonExistingUserException("No user with id: "+id.toString());
+		}
+		else {
+			foundUserDto = new UserInfo(foundUser.getId(), foundUser.getAuthorities(),  foundUser.getUsername(), foundUser.getEmail(),
+					                    foundUser.getReservations(), foundUser.getFavoriteBooks());
+		}
+		return foundUserDto ;
+	}
+	
 	/**
 	 * Returns a list of all users specified data
 	 * @return List of users
@@ -115,7 +135,8 @@ public class UserService {
 		List<UserInfo> responseUsers = new ArrayList<>();
 		
 		for(User usr : usersDb) {
-			UserInfo userDto = new UserInfo(usr.getId(), usr.getAuthorities(),  usr.getUsername(), usr.getEmail());
+			UserInfo userDto = new UserInfo(usr.getId(), usr.getAuthorities(),  usr.getUsername(), usr.getEmail(),
+					                        usr.getReservations(), usr.getFavoriteBooks());
 			responseUsers.add(userDto);
 		}
 		
@@ -134,12 +155,44 @@ public class UserService {
 		Page<UserInfo> dtoPage = users.map(new Function<User, UserInfo>() {
 			@Override
 			public UserInfo apply(User user) {
-				UserInfo dto = new UserInfo(user.getId(), user.getAuthorities(),  user.getUsername(), user.getEmail());
+				UserInfo dto = new UserInfo(user.getId(), user.getAuthorities(),  user.getUsername(), user.getEmail(),
+						                    user.getReservations(), user.getFavoriteBooks());
 				return dto;
 			}
 
 		});
 		return dtoPage;
+	}
+	
+	@Transactional
+	public boolean updateUser (Integer id, UserDTO userData) {
+		
+		User userToChange = userRepo.findById(id).orElse(null);
+		
+		if(userToChange == null) {
+			throw new ExistingUserException("No such user for its data to be updated.");
+		}
+		
+		checkUserDataFields(userData);
+		
+        
+		userToChange.setEmail(userData.getEmail());
+		List<Authority> authority = new ArrayList<>();
+		for(String str : userData.getRoles()) {
+			Authority auth = new Authority();
+			auth.setAuthority(Role.valueOf(str));
+			authority.add(auth);
+		}	
+		userToChange.setAuthorities(authority);
+		userToChange.setUsername(userData.getUsername());
+		userToChange.setPassword(passwordEncoder.getPasswordEncoder().encode(userData.getPassword()));
+		User returnUser = userRepo.save(userToChange);
+		for(Authority role : authority) {
+			role.setUser(returnUser);
+			authRepo.save(role);
+		}
+		
+		return true;
 	}
 	
 	/**

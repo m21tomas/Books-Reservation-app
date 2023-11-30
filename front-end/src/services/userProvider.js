@@ -10,11 +10,17 @@ const UserProvider = ({ children }) => {
   const [isValid, setIsValid] = useState(null);
 
   useEffect (() => {
+    console.log("JWT in UserProvider:", jwt);
     if(jwt){
       ajax(`${apiEndpoint}/api/auth/validate`, "get", jwt)
-       .then((isValid) => {
-           setIsValid(isValid);
-       })
+        .then((isValid) => {
+          console.log("Validation Result:", isValid);
+          setIsValid(isValid);
+        })
+        .catch((error) => {
+          console.error("Token validation error:", error);
+          setIsValid(false);
+        });
     }
   }, [jwt])
 

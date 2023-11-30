@@ -1,4 +1,4 @@
-package soft.project.demo.model;
+package soft.project.demo.firstEntities;
 
 import jakarta.annotation.PostConstruct;
 
@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import soft.project.demo.dto.UserDTO;
+import soft.project.demo.enums.Role;
 import soft.project.demo.repository.UserRepository;
 import soft.project.demo.service.UserService;
 
@@ -33,6 +34,7 @@ public class FirstAdmin {
 	 * @throws Exception
 	 * 
 	 */
+	@SuppressWarnings("unused")
 	@PostConstruct
 	public void addFirstUser() throws Exception {
 
@@ -44,11 +46,11 @@ public class FirstAdmin {
 			adminRole.add("ADMIN");
 			UserDTO firstAdmin = new UserDTO(adminRole, "admin@admin.lt", "admin@admin.lt","admin@admin.lt");
 
-			userRole.add("USER");
-			UserDTO firstUser = new UserDTO(userRole, "user@user.lt", "user@user.lt", "user@user.lt");
+			userRole.add("READER");
+			UserDTO firstUser = new UserDTO(userRole, "reader@reader.lt", "reader@reader.lt", "reader@reader.lt");
 			
 			managersRoles.add("ADMIN");
-			managersRoles.add("USER");
+			managersRoles.add("READER");
 			UserDTO firstManager = new UserDTO(managersRoles, "manager@manager.lt", "manager@manager.lt", "manager@manager.lt");
 
 			userService.createUser(firstAdmin);

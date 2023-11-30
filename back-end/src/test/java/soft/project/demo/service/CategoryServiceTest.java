@@ -1,9 +1,10 @@
-package soft.project.demo;
+package soft.project.demo.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.List;
 
@@ -18,7 +19,6 @@ import soft.project.demo.dto.CategoryDTO;
 import soft.project.demo.exception.ExistingBookCategoryException;
 import soft.project.demo.exception.NonExistingBookCategoryException;
 import soft.project.demo.model.Category;
-import soft.project.demo.service.CategoryService;
 
 @SpringBootTest
 @TestMethodOrder(OrderAnnotation.class)
@@ -30,7 +30,7 @@ public class CategoryServiceTest {
 	@Test
 	@Order(1)
 	void testCreateCategory () {
-		CategoryDTO catDto = new CategoryDTO("Novel");
+		CategoryDTO catDto = new CategoryDTO("TestRomance");
 		
 		boolean created = catService.createCategory(catDto);
 		
@@ -38,7 +38,7 @@ public class CategoryServiceTest {
 		
 		ExistingBookCategoryException exception = assertThrows(ExistingBookCategoryException.class, () -> {catService.createCategory(catDto);});
 		
-		assertEquals("Novel category already exists.", exception.getMessage());
+		assertEquals(catDto.getCategoryName()+ " category already exists.", exception.getMessage());
 	}
 	
 	@Test
@@ -50,14 +50,17 @@ public class CategoryServiceTest {
 		
 		int theId = -1;
 		for(Category item: list) {
-			theId = item.getId();
+			if(item.getName().equals("TestRomance")) {
+				theId = item.getId();
+				break;
+			}
 		}
 		
 		assertTrue(theId != -1 && theId>0);
 		
 		Category obj = catService.findById(theId);
 		
-		assertTrue(obj != null && obj.getName().equals("Novel"));
+		assertTrue(obj != null && obj.getName().equals("TestRomance"));
 	}
 	
 	@Test
@@ -67,14 +70,17 @@ public class CategoryServiceTest {
 		
 		int theId = -1;
 		for(Category item: list) {
-			theId = item.getId();
+			if(item.getName().equals("TestRomance")) {
+				theId = item.getId();
+				break;
+			}
 		}
 		
-		CategoryDTO newCategory = new CategoryDTO("Fantastic");
+		CategoryDTO newCategory = new CategoryDTO("TestFantastic");
 		
 		boolean updateStatus = catService.updateCategoryById(theId, newCategory);
 		
-		assertTrue(updateStatus && catService.findById(theId).getName().equals("Fantastic"));
+		assertTrue(updateStatus && catService.findById(theId).getName().equals("TestFantastic"));
 		
 		final int theIdCopy = theId;
 		NonExistingBookCategoryException exception = assertThrows (NonExistingBookCategoryException.class, () -> {
@@ -92,13 +98,19 @@ public class CategoryServiceTest {
 	
 	@Test
 	@Order(4)
-	void testDeleteCategoryName () {
-		boolean deleteStatus = catService.deleteCategoryByName("Fantastic");
+	void testDeleteCreatedCategoryNames () {
+		boolean deleteStatus = catService.deleteCategoryByName("TestFantastic");
 		assertTrue(deleteStatus);
 		
-		boolean falseStatus = catService.deleteCategoryByName("Novel");
+		boolean falseStatus = catService.deleteCategoryByName("TestRomance");
 		
 		assertFalse(falseStatus);
+		
+		if(catService.findByName("No Category") != null) {
+			catService.deleteCategoryByName("No Category");
+		}
+		
+		assertNull(catService.findByName("No Category"));
 	}
 	
 }

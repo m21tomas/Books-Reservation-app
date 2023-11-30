@@ -30,6 +30,10 @@ public class Category {
 	private Set<Book> books;
 	
 	public Category() {}
+	public Category(String name) {
+		super();
+		this.name = name;
+	}
 
 	public Category(String name, Set<Book> books) {
 		super();
