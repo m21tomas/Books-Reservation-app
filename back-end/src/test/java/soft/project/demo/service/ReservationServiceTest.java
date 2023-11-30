@@ -1,6 +1,7 @@
 package soft.project.demo.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import jakarta.transaction.Transactional;
 import soft.project.demo.dto.ReservationDTO;
 import soft.project.demo.exception.EmptyInputException;
 import soft.project.demo.exception.ExistingBookReservationException;
@@ -52,11 +54,41 @@ public class ReservationServiceTest {
 			username = getUsername.get();
 		}
 		
+		String manager = "";
+		
+		Optional<String> getManager = users.stream()
+		        .filter(user -> user.getRoles().size() == 2)
+		        .filter(user -> user.getUsername().equals("manager@manager.lt"))
+		        .map(UserInfo::getUsername)
+		        .findFirst();
+		
+		if(getManager.isPresent()) {
+			manager = getManager.get();
+		}
+		
+		String admin = "";
+		
+		Optional<String> getAdmin = users.stream()
+		        .filter(user -> user.getRoles().size() == 1)
+		        .filter(user -> user.getUsername().equals("admin@admin.lt"))
+		        .map(UserInfo::getUsername)
+		        .findFirst();
+		
+		if(getAdmin.isPresent()) {
+			admin = getAdmin.get();
+		}
+		
 		final String existingUsername = username;
 		
 		List<Book> books = bookService.findAll();
 		
 		int bookId = books.get(books.size()/2).getId();
+		
+		int bookId2 = books.get(books.size()/4).getId();
+		
+		assertNotNull(resService.addReservation(manager, bookId, 20));
+		
+		assertNotNull(resService.addReservation(admin, bookId2, 10));
 		
 		List<ReservationDTO> userResList = Collections.emptyList();
 		
@@ -102,7 +134,78 @@ public class ReservationServiceTest {
 		}
 	}
 	
-	
+	@Transactional
+	@Test
+	@Order(2)
+	void testReadReservation() {
+		List<Reservation> reservations = resService.findAllReservations();
+		
+		assertTrue(reservations.size() > 0);
+		
+		int id = 0;
+		
+		for(Reservation res : reservations) {
+			if(res.getUser().getUsername().equals("reader@reader.lt")) {
+				id = res.getId();
+				break;
+			}
+		}
+		
+		assertNotNull(resService.findById(id));
+		
+		List<ReservationDTO> reservationsDTO = resService.findAllReservationsDto();
+		
+		assertEquals(reservations.size(), reservationsDTO.size());
+		
+		assertEquals(3, reservationsDTO.size());
+		
+		ReservationDTO resDto = resService.findByIdDto(id);
+		
+		assertNotNull(resDto);
+		
+		String bookTitle = resDto.getBookTitle();
+		
+		String username = resDto.getUsername();
+		
+		List<ReservationDTO> listRes = resService.findByBookTitle(bookTitle);
+		
+		assertTrue(listRes.size() == 2);
+		
+		for(ReservationDTO dtoItem : listRes) {
+			if(dtoItem.getBookTitle().equals(bookTitle)) {
+				assertEquals(bookTitle, dtoItem.getBookTitle());
+			}
+		}
+		
+		List<ReservationDTO> listResByUser = resService.findByUser(username);
+		
+		assertTrue(listResByUser.size() > 0);
+		
+		assertEquals(1, listResByUser.size());
+		
+		for(ReservationDTO dtoItem2 : listResByUser) {
+			if(dtoItem2.getUsername().equals(username)) {
+				assertEquals(username, dtoItem2.getUsername());
+				break;
+			}
+		}
+		
+		var response = resService.getAllReservationsPage(0, 5);
+		
+		List<ReservationDTO> resers = response.getContent();
+		int pageItemsNum = response.getContent().size();
+		
+		for(ReservationDTO item : resers) {
+			if(item.getBookTitle().equals(bookTitle)) {
+				assertEquals(bookTitle, item.getBookTitle());
+				break;
+			}
+		}
+		
+		assertEquals(3, resers.size());
+		
+		assertEquals(3, pageItemsNum);
+	}
 	
 	
 }

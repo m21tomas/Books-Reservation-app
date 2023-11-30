@@ -12,8 +12,11 @@ import soft.project.demo.model.Reservation;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Integer>{
 	
-	@Query(value="SELECT * FROM Reservation A JOIN Books B ON A.book_id=B.id WHERE B.title=?1", nativeQuery = true)
-	Optional<List<Reservation>> findByBookTitle(String title);
+//	@Query(value = "SELECT R.id, R.edition_isbn, R.reservation_date, R.return_date, R.status, R.book_id, R.user_id FROM Reservation R JOIN Books B ON R.book_id = B.id WHERE B.title = ?1", nativeQuery = true)
+//	Optional<List<Reservation>> findByBookTitle(String title);
+
+	@Query("SELECT r FROM Reservation r JOIN FETCH r.book b WHERE b.title = ?1")
+    Optional<List<Reservation>> findByBookTitle(String title);
 	
 	@Query("Select r FROM Reservation r JOIN User u ON r.user.id=u.id WHERE u.username=?1")
 	Optional<List<Reservation>> findByUser(String username);
