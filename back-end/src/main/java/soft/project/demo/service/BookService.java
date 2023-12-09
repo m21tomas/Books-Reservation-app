@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,19 +26,29 @@ import soft.project.demo.dto.BookResponseDTO;
 import soft.project.demo.exception.ExistingBookException;
 import soft.project.demo.exception.NonExistingBookCategoryException;
 import soft.project.demo.exception.NonExistingBookException;
+import soft.project.demo.exception.NonExistingUserException;
 import soft.project.demo.model.Book;
 import soft.project.demo.model.Category;
+import soft.project.demo.model.User;
+import soft.project.demo.model.UserInfo;
 import soft.project.demo.repository.BookRepository;
 import soft.project.demo.repository.CategoryRepository;
+import soft.project.demo.repository.UserRepository;
+import soft.project.demo.utility.FictionalIsbn;
 
 @Service
 public class BookService {
+	@Autowired
+	private UserService userService;
 
 	@Autowired
 	private CategoryService catService;
 	
 	@Autowired
 	private BookRepository bookRepo;
+	
+	@Autowired
+	private UserRepository userRepo;
 	
 	@Autowired
 	private CategoryRepository categoryRepo;
@@ -55,6 +66,14 @@ public class BookService {
 	@Transactional(readOnly = true)
 	public List<Book> findAll() {
 		return bookRepo.findAll();
+	}
+	
+	public String getRandomIsbn(int publicantSize) {
+		return FictionalIsbn.makeUniqueFictionalIsbn(findAll(), publicantSize);
+	}
+	
+	public String getCloseISBNToThisISBN(String isbn) {
+		return FictionalIsbn.getClosePossibleIsbn(isbn, findAll());
 	}
 	
 	@Transactional
@@ -87,11 +106,16 @@ public class BookService {
 			else
 				throw new NonExistingBookCategoryException("No such book category like: "+bookDto.getCategory());
 		}
-		book.setIsbn(bookDto.getIsbn());
+		
+		if(FictionalIsbn.isValidIsbn(bookDto.getIsbn(), findAll())) {			
+			book.setIsbn(bookDto.getIsbn());
+		}
+		
 		book.setYear(bookDto.getYear());
 		book.setPages(bookDto.getPages());
 		book.setSummary(bookDto.getSummary());
 		book.setCirculation(bookDto.getCirculation());
+		book.setReservationNumber(bookDto.getReservations());
 		
 		String fileName = StringUtils.cleanPath(file.getOriginalFilename());
 		
@@ -151,11 +175,14 @@ public class BookService {
 				throw new NonExistingBookCategoryException("No such book category like: "+bookDto.getCategory());
 		}
 		
-		book.setIsbn(bookDto.getIsbn());
+		if(FictionalIsbn.isValidIsbn(bookDto.getIsbn(), findAll())) {			
+			book.setIsbn(bookDto.getIsbn());
+		}
 		book.setYear(bookDto.getYear());
 		book.setPages(bookDto.getPages());
 		book.setSummary(bookDto.getSummary());
-		book.setCirculation(bookDto.getCirculation());	
+		book.setCirculation(bookDto.getCirculation());
+		book.setReservationNumber(bookDto.getReservations());
 		book.setPhoto(null);
 		
         return bookRepo.save(book);
@@ -288,9 +315,27 @@ public class BookService {
 		}
 		else {
 			if(!book.getAuthor().equals(data.getAuthor())) book.setAuthor(data.getAuthor());
-			if(!book.getCategory().getName().equals(data.getCategory())) book.setCategory(new Category(data.getCategory()));
+			if(!book.getCategory().getName().equals(data.getCategory())) {
+				List<Category> categories = catService.findAllCategories();
+				boolean catFound = false;
+				for(Category cat : categories) {
+					if(cat.getName().equals(data.getCategory())) {
+						book.setCategory(cat);
+						catFound = true;
+						break;
+					}
+				}
+				if(!catFound) {					
+					book.setCategory(new Category(data.getCategory()));
+				}
+			}
 			if(!book.getCirculation().equals(data.getCirculation())) book.setCirculation(data.getCirculation());
-			if(!book.getIsbn().equals(data.getIsbn())) book.setIsbn(data.getIsbn());
+			if(!book.getReservationNumber().equals(data.getReservations())) book.setReservationNumber(data.getReservations());
+			if(!book.getIsbn().equals(data.getIsbn())) {
+				List<Book> books = findAll();
+				if(FictionalIsbn.isValidIsbn(data.getIsbn(), books))
+				book.setIsbn(data.getIsbn());
+			}
 			if(!book.getPages().equals(data.getPages())) book.setPages(data.getPages());
 			if(!book.getSummary().equals(data.getSummary())) book.setSummary(data.getSummary());
 			if(!book.getTitle().equals(data.getTitle())) book.setTitle(data.getTitle());
@@ -387,4 +432,79 @@ public class BookService {
 		else return false;
 	}
 	
+	@Transactional
+	public UserInfo addBookToFavorites(int userId, int bookId) {
+		User user = userRepo.findById(userId).orElse(null);
+		
+		if(user == null) {
+			throw new NonExistingUserException("No user with id: "+userId);
+		}
+
+		Book book = findById(bookId);
+		
+		if(book == null) {
+			throw new NonExistingBookException("No book with id: "+bookId);
+		}
+		
+		user.getFavoriteBooks().add(book);
+		
+		User updatedUser = userRepo.save(user);
+		
+		Set<Book> favBooks = updatedUser.getFavoriteBooks();
+		
+		boolean added = false;
+		
+		for(Book theBook : favBooks) {
+			if(theBook.getId() == bookId) {
+				added = true;
+				break;
+			}
+		}
+		
+		if(!added) {
+			throw new NonExistingBookException("The book with id: "+bookId+" was not added to favorites set");
+		}
+		
+		UserInfo userinfo = userService.findUserById(userId);
+		
+		return userinfo;
+	}
+	
+	@Transactional
+	public UserInfo removeBookFromFavorites(int userId, int bookId) {
+		User user = userRepo.findById(userId).orElse(null);
+		
+		if(user == null) {
+			throw new NonExistingUserException("No user with id: "+userId);
+		}
+
+		Book book = findById(bookId);
+		
+		if(book == null) {
+			throw new NonExistingBookException("No book with id: "+bookId);
+		}
+		
+		user.getFavoriteBooks().remove(book);
+		
+		User updatedUser = userRepo.save(user);
+		
+		Set<Book> favBooks = updatedUser.getFavoriteBooks();
+		
+		boolean removed = true;
+		
+		for(Book theBook : favBooks) {
+			if(theBook.getId() == bookId) {
+				removed = false;
+				break;
+			}
+		}
+		
+		if(!removed) {
+			throw new NonExistingBookException("The book with id: "+bookId+" was not removed from the favorites set");
+		}
+		
+		UserInfo userinfo = userService.findUserById(userId);
+		
+		return userinfo;
+	}
 }

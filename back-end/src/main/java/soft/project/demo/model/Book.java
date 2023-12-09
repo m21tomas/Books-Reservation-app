@@ -34,8 +34,8 @@ public class Book {
 	@Column(nullable=false)
 	private Integer circulation;
 	
-	@Column(name = "reservation_number")
-	private int reservationNumber;
+	@Column(nullable=false, name = "reservations")
+	private Integer reservationNumber;
 	
 	@ManyToOne (optional = false)
 	//@JoinColumn(name = "category_id", nullable = true)
@@ -137,11 +137,11 @@ public class Book {
 		this.circulation = circulation;
 	}
 
-	public int getReservationNumber() {
+	public Integer getReservationNumber() {
 		return reservationNumber;
 	}
 
-	public void setReservationNumber(int reservationNumber) {
+	public void setReservationNumber(Integer reservationNumber) {
 		this.reservationNumber = reservationNumber;
 	}
 

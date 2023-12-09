@@ -65,7 +65,6 @@ public class FictionalIsbn {
 		addValueToMap("3 digits", "1-80000", "1-83799");
 		addValueToMap("3 digits", "1-83850", "1-86719");
 		addValueToMap("3 digits", "1-86760", "1-86979");
-		
 		addValueToMap("4 digits", "0-2280", "0-2289");
 		addValueToMap("4 digits", "0-3690", "0-3699");
 		addValueToMap("4 digits", "0-6390", "0-6397");
@@ -105,6 +104,7 @@ public class FictionalIsbn {
 	
 	private static Pair<String, String> getRandomPairForKey(String key) {
 		Random random = new Random();
+		
         List<Pair<String, String>> pairsForKey = mapWithPairs.get(key);
         
         int zeros = 0, ones = 0, largerNum = 0, sample = 0, getSample = 0, getIndex = 0;
@@ -141,6 +141,169 @@ public class FictionalIsbn {
             return null;
         }
     }
+	
+	private static Pair<String, String> getExactPairForKey(String key, String regPart){
+		List<Pair<String, String>> pairsForKey = mapWithPairs.get(key);
+		
+		String regGroup = regPart.substring(0, 1);
+		
+		String registrant = regPart.substring(2);
+		
+		if (pairsForKey != null && !pairsForKey.isEmpty()) {
+			for(Pair<String, String> pair : pairsForKey) {
+				if(Integer.parseInt(pair.getFirst().substring(0,1)) == 
+				   Integer.parseInt(regGroup) &&
+				   Integer.parseInt(pair.getFirst().substring(2)) <=
+						   Integer.parseInt(registrant) &&
+				   Integer.parseInt(pair.getSecond().substring(2)) >=
+						   Integer.parseInt(registrant)
+				  )
+				  return pair;
+        	}
+		}
+		return null;
+	}
+	
+	public static String getClosePossibleIsbn(String isbn, List<Book> books) {
+		Random random = new Random();
+		StringBuilder isbnBuilder = new StringBuilder();
+		StringBuilder nines = new StringBuilder("9");
+		int randNum = -1;
+		int hyphen1 = -1, hyphen2 = -1, hyphen3 = -1, hyphen4 = -1;
+		int registrant = -1, publication = -1;
+		int prefix = -1;
+		int checkDigit = -1, digit = -1;
+		int newRegistrant = -1, newPublication = -1, pubRange = -1;
+		int checkReg = -1, checkPub = -1;
+		char digitChar = '\u0000';
+    	int product = 0;
+		String regGroupStr = "";
+		String registrantStr = "";
+		String regPart = "";
+		String publicationStr = "";
+		String theKey = "";
+		int pubPartDigitsNum = -1;
+		boolean loop = false;
+        int iterations = 0, maxIterations = 50000;
+		
+		if(isValidIsbn(isbn, books)) {
+			hyphen1 = isbn.indexOf('-');
+			hyphen2 = isbn.indexOf('-', hyphen1 + 1);
+			hyphen3 = isbn.indexOf('-', hyphen2 + 1);
+			hyphen4 = isbn.indexOf('-', hyphen3 + 1);
+			
+			prefix = Integer.parseInt(isbn.substring(0, hyphen1));;
+			regGroupStr = isbn.substring(hyphen1+1, hyphen2);
+			registrantStr = isbn.substring(hyphen2+1, hyphen3);
+			registrant = Integer.parseInt(registrantStr);
+			newRegistrant = registrant;
+			regPart = regGroupStr+'-'+registrantStr;
+			publicationStr = isbn.substring(hyphen3+1, hyphen4);
+			publication = Integer.parseInt(publicationStr);
+			newPublication = publication;
+			
+			pubPartDigitsNum = publicationStr.length();
+			
+			theKey = Integer.toString(pubPartDigitsNum) + (pubPartDigitsNum > 1 ? " digits" : " digit");
+			
+			Pair<String, String> exactPair = getExactPairForKey(theKey, regPart);
+			
+			for (int i = 1; i < pubPartDigitsNum; i++) {
+	            nines.append("9");
+	        }
+	        
+	        pubRange = Integer.parseInt(nines.toString());
+			
+			do {
+				if(registrant == Integer.parseInt(exactPair.getFirst().substring(2))) {
+					newRegistrant++;
+				} else
+				if(registrant == Integer.parseInt(exactPair.getSecond().substring(2))) {
+					newRegistrant--;
+				}
+				else 
+				if(registrant > Integer.parseInt(exactPair.getFirst().substring(2)) &&
+				   registrant < Integer.parseInt(exactPair.getSecond().substring(2))	
+				  ) {
+					randNum = random.nextInt(10);
+					if(randNum % 2 == 0) newRegistrant++;
+					else newRegistrant--;
+				}
+				
+				if(newPublication == checkPub) {
+					if(newPublication == pubRange) {
+						newPublication--;
+					}
+					else if(newPublication == 0) {
+						newPublication++;
+					}
+					else if(newPublication < pubRange && newPublication > 0) {
+						randNum = random.nextInt(10);
+						if(randNum % 2 == 0) newPublication++;
+						else newPublication--;
+					}
+				}
+				
+				loop = false;
+				for(Book book : books) {
+		        	isbn = book.getIsbn();
+		        	
+		        	hyphen2 = isbn.indexOf('-', isbn.indexOf('-') + 1);
+		        	hyphen3 = isbn.indexOf('-', hyphen2 + 1);
+		        	checkReg = Integer.parseInt(isbn.substring(hyphen2 + 1, hyphen3));
+		        	
+		        	hyphen4 = isbn.indexOf('-', hyphen3 + 1);
+		        	checkPub = Integer.parseInt(isbn.substring(hyphen3 + 1, hyphen4)) ;
+		            
+		        	if(newRegistrant == checkReg && newPublication == checkPub) {
+		        		loop = true;
+		        		break;
+		        	}
+		        }
+				
+				iterations++;
+
+		        if (iterations > maxIterations) {
+		        	String str1 = "Exceeded maximum iterations. Adjust parameters to avoid infinite loop.";
+		        	String str2 = "\nAll checked books have registrant and pubication element numbers already taken.";
+		        	String str3 = "\nYou can check another possible registrant and publication ranges of an isbn.";
+		        	String str = str1+str2+str3;
+		            throw new RuntimeException(str);
+		        }	
+			}while(loop);
+			
+			String regFormat = "%0" + String.valueOf(8-pubPartDigitsNum) + "d";
+	        String pubFormat = "%0" + String.valueOf(pubPartDigitsNum) + "d";
+	        
+	        isbnBuilder.append(prefix)
+	        .append(regGroupStr)
+	        .append(String.format(regFormat, newRegistrant))
+	        .append(String.format(pubFormat, newPublication));
+	        
+	        product = 0;
+	        for (int i = 0; i < isbnBuilder.length(); i++) {
+	            digitChar = isbnBuilder.charAt(i);
+
+	            digit = Character.getNumericValue(digitChar);
+
+	            product = product + digit * (i % 2 == 0 ? 1 : 3);
+	        }
+	        
+	        if(product%10 == 0) checkDigit = 0;
+	        else checkDigit = 10 - product%10;
+	        
+	        isbnBuilder.setLength(0);
+	        
+	        isbnBuilder.append(prefix).append("-")
+	        .append(regGroupStr).append("-")
+	        .append(String.format(regFormat, newRegistrant)).append("-")
+	        .append(String.format(pubFormat, newPublication)).append("-")
+	        .append(checkDigit);
+	        
+	        return isbnBuilder.toString();
+		}
+		return null;
+	}
 	
 	public static String makeUniqueFictionalIsbn(List<Book> books, int pubDigits) {
 		Random random = new Random();
@@ -201,6 +364,7 @@ public class FictionalIsbn {
 	            
 	        	if(registrant == checkReg && publication == checkPub) {
 	        		loop = true;
+	        		break;
 	        	}
 	        }
 	        
@@ -250,8 +414,8 @@ public class FictionalIsbn {
 	public static boolean isValidIsbn(String isbn, List<Book> books) {
 		int prefix = 978;
     	int regGroup = 1;
-    	int registrant = 0, regLength = 0;;
-    	int publication = 0, pubLength = 0;;
+    	int registrant = 0, regLength = 0;
+    	int publication = 0, pubLength = 0;
     	int checkDigit = 0, digit = 0;
     	int hyphen1 = -1, hyphen2 = -1, hyphen3 = -1, hyphen4 = -1;
     	char digitChar = '\u0000';

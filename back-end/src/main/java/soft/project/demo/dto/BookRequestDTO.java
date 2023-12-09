@@ -9,12 +9,13 @@ public class BookRequestDTO {
 	private Integer year;
 	private Integer pages;
 	private Integer circulation;
+	private Integer reservations;
 	private String category;
 	
 	public BookRequestDTO() {}
 	
 	public BookRequestDTO(String title, String author, String summary, String isbn, Integer year, Integer pages, Integer circulation,
-			String category) {
+			Integer reservations, String category) {
 		super();
 		this.title = title;
 		this.author = author;
@@ -23,6 +24,7 @@ public class BookRequestDTO {
 		this.year = year;
 		this.pages = pages;
 		this.circulation = circulation;
+		this.reservations = reservations;
 		this.category = category;
 	}
 
@@ -80,6 +82,14 @@ public class BookRequestDTO {
 
 	public void setCirculation(Integer circulation) {
 		this.circulation = circulation;
+	}
+	
+	public Integer getReservations() {
+		return reservations;
+	}
+
+	public void setReservations(Integer reservations) {
+		this.reservations = reservations;
 	}
 
 	public String getCategory() {

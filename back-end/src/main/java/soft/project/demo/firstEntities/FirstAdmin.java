@@ -36,7 +36,7 @@ public class FirstAdmin {
 	 */
 	@SuppressWarnings("unused")
 	@PostConstruct
-	public void addFirstUser() throws Exception {
+	public void addFirstUser() {
 
 		if (userDao.findUsersByAuthority(Role.ADMIN).size() == 0) {
 			List<String> adminRole = new ArrayList<>();

@@ -2,6 +2,7 @@ package soft.project.demo.model;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.security.core.GrantedAuthority;
 
@@ -12,7 +13,7 @@ public class UserInfo {
 	private String password;
 	private String email;
 	private List<Reservation> reservations;
-	private List<FavoriteBook> favoriteBooks;
+	private Set<Book> favoriteBooks;
 	
 	public UserInfo() {}
 	
@@ -34,7 +35,7 @@ public class UserInfo {
 	}
 	
 	public UserInfo(Integer userId, Collection<? extends GrantedAuthority> roles, String username, String email, 
-			        List<Reservation> reservations, List<FavoriteBook> favoriteBooks) {
+			        List<Reservation> reservations, Set<Book> favoriteBooks) {
 		super();
 		this.userId = userId;
 		this.roles = roles;
@@ -92,11 +93,11 @@ public class UserInfo {
 		this.reservations = reservations;
 	}
 
-	public List<FavoriteBook> getFavoriteBooks() {
+	public Set<Book> getFavoriteBooks() {
 		return favoriteBooks;
 	}
 
-	public void setFavoriteBooks(List<FavoriteBook> favoriteBooks) {
+	public void setFavoriteBooks(Set<Book> favoriteBooks) {
 		this.favoriteBooks = favoriteBooks;
 	}
 	

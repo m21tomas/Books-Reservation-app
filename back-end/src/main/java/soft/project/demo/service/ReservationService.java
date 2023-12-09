@@ -245,15 +245,14 @@ public class ReservationService {
 		
 		if(book.getReservationNumber() >= book.getCirculation()) {
 			
-			List<Reservation> resList = findAllReservations();	
+			List<ReservationDTO> resList = findByBookTitle(book.getTitle()); //findAllReservations();	
 			
 			int minDays  = Integer.MAX_VALUE;
+			LocalDateTime currentDateTime = LocalDateTime.now();
 			
-			for(Reservation res : resList) {
-		        LocalDate returnDate = res.getReturnDate();
-		        LocalDateTime currentDateTime = LocalDateTime.now();
-
-		        long daysUntilReturn = ChronoUnit.DAYS.between(currentDateTime.toLocalDate(), returnDate);
+			for(ReservationDTO res : resList) {
+		        
+		        long daysUntilReturn = ChronoUnit.DAYS.between(currentDateTime.toLocalDate(), res.getReturnDate());
 
 		        if(daysUntilReturn < minDays) {
 		            minDays = (int) daysUntilReturn;
@@ -314,6 +313,7 @@ public class ReservationService {
 	        num = res.getBook().getReservationNumber()-1;
 	        if(num < 0) num = 0;
 	    	res.getBook().setReservationNumber(num);
+	    	res.setBookEditionISBN(res.getBook().getIsbn()+" "+num);
 	    } 
 	    else
 	    if((res.getStatus() != ReservationStatus.PENDING &&
@@ -324,15 +324,13 @@ public class ReservationService {
 	    {
 	    	num = res.getBook().getReservationNumber()+1;
 	        if(num > res.getBook().getCirculation()) {
-	        	List<Reservation> resList = findAllReservations();
+	        	List<ReservationDTO> resList = findByBookTitle(res.getBook().getTitle()); //findAllReservations();
 	        	
 	        	int minDays  = Integer.MAX_VALUE;
+	        	LocalDateTime currentDateTime = LocalDateTime.now();
 				
-				for(Reservation reser : resList) {
-			        LocalDate returnDate = reser.getReturnDate();
-			        LocalDateTime currentDateTime = LocalDateTime.now();
-
-			        long daysUntilReturn = ChronoUnit.DAYS.between(currentDateTime.toLocalDate(), returnDate);
+				for(ReservationDTO reser : resList) {
+			        long daysUntilReturn = ChronoUnit.DAYS.between(currentDateTime.toLocalDate(), reser.getReturnDate());
 
 			        if(daysUntilReturn < minDays) {
 			            minDays = (int) daysUntilReturn;
@@ -347,6 +345,7 @@ public class ReservationService {
 	        } 
 	        else {
 	        	res.getBook().setReservationNumber(num);
+	        	res.setBookEditionISBN(res.getBook().getIsbn()+" "+num);
 	        }
 	    }
 	    
@@ -361,45 +360,84 @@ public class ReservationService {
 	public ReservationDTO updateReservationData (ReservationDTO obj, Integer id) {
 		Reservation res = findById(id);
 		
-		String newAuthorDto = "";
-		
 		if(res == null) {
 			throw new NonExistingBookException("Update: No such reservation with id: "+id);
 		} else {
-			if(!res.getId().equals(obj.getId())) res.setId(obj.getId());
 			if(!res.getUser().getUsername().equals(obj.getUsername())) {
 				User otherUser = userRepo.findByUsername(obj.getUsername()).orElse(null);
 				if(otherUser != null) {
 					res.setUser(otherUser);
 				}
 			}
-			if(!res.getBookEditionISBN().equals(obj.getBookReservationISBN())) res.setBookEditionISBN(obj.getBookReservationISBN());
 			if(!res.getBook().getId().equals(obj.getBookid()) || !res.getBook().getTitle().equals(obj.getBookTitle())) {
 				if(!res.getBook().getId().equals(obj.getBookid())) {
 					Book otherBook = bookRepo.findById(obj.getBookid()).orElse(null);
 					if(otherBook != null) {
-						res.setBook(otherBook);
+						if(otherBook.getReservationNumber() < otherBook.getCirculation()) {
+							if((res.getStatus().toString().equalsIgnoreCase("Reserved") ||
+									res.getStatus().toString().equalsIgnoreCase("Pending"))) {	
+								res.getBook().setReservationNumber(res.getBook().getReservationNumber()-1);
+							}
+							if((obj.getStatus().toString().equalsIgnoreCase("Reserved") ||
+									obj.getStatus().toString().equalsIgnoreCase("Pending"))) {
+								
+								otherBook.setReservationNumber(otherBook.getReservationNumber()+1);
+							}
+							res.setBookEditionISBN(otherBook.getIsbn()+" "+(otherBook.getReservationNumber()));
+							res.setBook(otherBook);	
+						}
+						else {
+							throw new ExistingBookException("All books with id: "+obj.getBookid()+" reserved");
+						}
 					}
 				}
 				else if (!res.getBook().getTitle().equals(obj.getBookTitle())) {
 					Book anotherBook = bookRepo.findByTitle(obj.getBookTitle()).orElse(null);
 					if(anotherBook != null) {
-						res.setBook(anotherBook);
+						if(anotherBook.getReservationNumber() < anotherBook.getCirculation()) {
+							if((res.getStatus().toString().equalsIgnoreCase("Reserved") ||
+									res.getStatus().toString().equalsIgnoreCase("Pending"))) {	
+								res.getBook().setReservationNumber(res.getBook().getReservationNumber()-1);
+							}
+							if((obj.getStatus().toString().equalsIgnoreCase("Reserved") ||
+									obj.getStatus().toString().equalsIgnoreCase("Pending"))) {
+								res.setBookEditionISBN(anotherBook.getIsbn()+" "+(anotherBook.getReservationNumber()+1));
+								anotherBook.setReservationNumber(anotherBook.getReservationNumber()+1);
+							}
+							res.setBook(anotherBook);	
+						}
+						else {
+							throw new ExistingBookException("All books with id: "+obj.getBookid()+" reserved");
+						}
 					}
 				}
 			}
-			if(!res.getBook().getAuthor().equals(obj.getBookAuthor())) {
-				newAuthorDto = obj.getBookAuthor();
+			
+			if(obj.getReservationDate().isAfter(obj.getReturnDate().atStartOfDay())) {
+				throw new ExistingBookReservationException("Reservation date cannot be later or equal to the return date.");
 			}
+			
 			if(!res.getReservationDate().equals(obj.getReservationDate())) res.setReservationDate(obj.getReservationDate());
 			if(!res.getReturnDate().equals(obj.getReturnDate())) res.setReturnDate(obj.getReturnDate());
-			if(!res.getStatus().equals(obj.getStatus())) res.setStatus(obj.getStatus());
+			if(!res.getStatus().equals(obj.getStatus())) {
+				ReservationStatus checkStatus = null;
+			    for (ReservationStatus reservationStatus : ReservationStatus.values()) {
+			        if (reservationStatus.getStatus().equalsIgnoreCase(obj.getStatus().toString())) {
+			        	checkStatus = reservationStatus;
+			            break;
+			        }
+			    }
+			    
+			    if (checkStatus == null) {
+			        throw new IllegalArgumentException("Change Status: Invalid reservation status: " + obj.getStatus());
+			    }
+			    
+				res.setStatus(checkStatus);
+			}
 			
 			Reservation updatedRes = reserRepo.save(res);
 			
 			ReservationDTO updtadedResDto = reservationToDTO(updatedRes);
-			
-			updtadedResDto.setBookAuthor(newAuthorDto+" ("+updatedRes.getBook().getAuthor()+")");
 			
 			return updtadedResDto;
 		}
@@ -413,6 +451,11 @@ public class ReservationService {
 			throw new NonExistingBookException("Delete: No such reservation to delete with id: "+id);
 		}
 		else {
+			ReservationStatus status = res.getStatus();
+			if(status == ReservationStatus.RESERVED || status == ReservationStatus.PENDING) {	
+				res.getBook().setReservationNumber(res.getBook().getReservationNumber()-1);
+			}
+			
 			reserRepo.delete(res);
 		}
 		

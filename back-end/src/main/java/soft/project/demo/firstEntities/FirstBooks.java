@@ -73,7 +73,7 @@ public class FirstBooks {
 	        	int circ =0;
 	        	List<Book> books = bookService.findAll();
 		        for (int i = 0; i < authors.length; i++) {
-		        	circ = random.nextInt(1000 - 50 + 1) + 50;
+		        	circ = random.nextInt(20 - 1 + 1) + 1;
 		            BookRequestDTO bookDTO = new BookRequestDTO();
 		            bookDTO.setTitle(bookTitles[i]);
 		            bookDTO.setAuthor(authors[i]);
@@ -83,6 +83,7 @@ public class FirstBooks {
 		            bookDTO.setYear(years[i]);
 		            bookDTO.setPages(300 + i * 10);
 		            bookDTO.setCirculation(circ); //(100 + i * 5);
+		            bookDTO.setReservations(0);
 		            bookDTO.setCategory(bookGenres[i]);
 		
 		            // Adding books to the system

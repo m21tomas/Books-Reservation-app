@@ -54,25 +54,27 @@ public class BookServiceTest {
 		bookDto.setTitle("title");
 		bookDto.setAuthor("author");
 		bookDto.setSummary("summary");
-		bookDto.setIsbn("978-1-07182-512-9");
+		bookDto.setIsbn("978-1-75182-512-8");
 		bookDto.setYear(2000);
 		bookDto.setPages(10);
 		bookDto.setCirculation(5);
+		bookDto.setReservations(0);
 		bookDto.setCategory("Cat1");
 		BookRequestDTO bookDto2 = new BookRequestDTO();
 		bookDto2.setTitle("title2");
 		bookDto2.setAuthor("author2");
 		bookDto2.setSummary("summary2");
-		bookDto2.setIsbn("5820198");
+		bookDto2.setIsbn("978-1-75183-512-7");
 		bookDto2.setYear(2001);
 		bookDto2.setPages(100);
 		bookDto2.setCirculation(50);
+		bookDto2.setReservations(0);
 		bookDto2.setCategory("Cat2");
 		BookRequestDTO horBookDto = new BookRequestDTO("The Dark Half", "Stephen King", 
 				"Thad Beaumont is an author and recovering alcoholic who lives in the town of Ludlow, Maine. "
 				+ "Thad's own books – cerebral literary fiction – are not very successful. "
 				+ "However, under the pen name \"George Stark\", he writes highly successful crime novels "
-				+ "about a psychopathic killer named Alexis Machine.", "700003643", 1989, 431, 100, "Horror");
+				+ "about a psychopathic killer named Alexis Machine.", "978-1-75184-512-6", 1989, 431, 100, 0,"Horror");
 		
 		Book createdBook = bookService.addNewBook(bookDto);
 		Book createdBook2 = bookService.addNewBook(bookDto2);
@@ -92,10 +94,11 @@ public class BookServiceTest {
 		bookDto.setTitle("New Book With Image");
 		bookDto.setAuthor("Tomas Mockaitis");
 		bookDto.setSummary("Instructions how to add an image and asociate it with the Book object");
-		bookDto.setIsbn("555556666");
+		bookDto.setIsbn("978-1-75185-512-5");
 		bookDto.setYear(2023);
 		bookDto.setPages(20);
 		bookDto.setCirculation(3);
+		bookDto.setReservations(0);
 		bookDto.setCategory("Cat2");
 		
 		MultipartFile file = null;
@@ -199,6 +202,7 @@ public class BookServiceTest {
 		data.setAuthor(theBook.getAuthor());
 		data.setCategory(theBook.getCategory().getName());
 		data.setCirculation(theBook.getCirculation());
+		data.setReservations(theBook.getReservationNumber());
 		data.setIsbn(theBook.getIsbn());
 		data.setPages(theBook.getPages());
 		data.setSummary(theBook.getSummary());

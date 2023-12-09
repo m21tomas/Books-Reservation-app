@@ -12,11 +12,12 @@ public class BookResponseDTO {
 	private byte[] image;
 	private Integer circulation;
 	private String category;
+	private Integer reservations;
 	
 	public BookResponseDTO() {}
 
 	public BookResponseDTO(Integer id, String title, String author, String summary, String isbn, Integer year, Integer pages,
-			byte[] image, Integer circulation, String category) {
+			byte[] image, Integer circulation, String category, Integer reservations) {
 		super();
 		this.id = id;
 		this.title = title;
@@ -28,6 +29,7 @@ public class BookResponseDTO {
 		this.image = image;
 		this.circulation = circulation;
 		this.category = category;
+		this.reservations = reservations;
 	}
 
 	public Integer getId() {
@@ -108,5 +110,13 @@ public class BookResponseDTO {
 
 	public void setCategory(String category) {
 		this.category = category;
+	}
+
+	public Integer getReservations() {
+		return reservations;
+	}
+
+	public void setReservations(Integer reservations) {
+		this.reservations = reservations;
 	}
 }

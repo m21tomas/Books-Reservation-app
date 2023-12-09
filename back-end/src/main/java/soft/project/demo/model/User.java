@@ -2,8 +2,10 @@ package soft.project.demo.model;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.GrantedAuthority;
@@ -42,8 +44,8 @@ public class User implements UserDetails{
 	@OneToMany(mappedBy = "user", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true)
     private List<Reservation> reservations = new ArrayList<>();
 	
-	@OneToMany(mappedBy = "user")
-    private List<FavoriteBook> favoriteBooks = new ArrayList<>();
+	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    private Set<Book> favoriteBooks = new HashSet<>();
 	
 	public User() {}
 
@@ -118,11 +120,11 @@ public class User implements UserDetails{
 		this.email = email;
 	}
 
-	public List<FavoriteBook> getFavoriteBooks() {
+	public Set<Book> getFavoriteBooks() {
 		return favoriteBooks;
 	}
 
-	public void setFavoriteBooks(List<FavoriteBook> favoriteBooks) {
+	public void setFavoriteBooks(Set<Book> favoriteBooks) {
 		this.favoriteBooks = favoriteBooks;
 	}
 
