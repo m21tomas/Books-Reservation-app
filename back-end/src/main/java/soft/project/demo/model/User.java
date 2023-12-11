@@ -44,7 +44,7 @@ public class User implements UserDetails{
 	@OneToMany(mappedBy = "user", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true)
     private List<Reservation> reservations = new ArrayList<>();
 	
-	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
     private Set<Book> favoriteBooks = new HashSet<>();
 	
 	public User() {}

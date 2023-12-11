@@ -1,6 +1,7 @@
 package soft.project.demo.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -11,6 +12,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.tika.Tika;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -27,10 +29,13 @@ import soft.project.demo.dto.CategoryDTO;
 import soft.project.demo.exception.ExistingBookException;
 import soft.project.demo.exception.NonExistingBookException;
 import soft.project.demo.model.Book;
+import soft.project.demo.model.UserInfo;
 
 @SpringBootTest
 @TestMethodOrder(OrderAnnotation.class)
 public class BookServiceTest {
+	@Autowired
+	private UserService userService;
 	
 	@Autowired
 	private BookService bookService;
@@ -220,7 +225,74 @@ public class BookServiceTest {
 	
 	@Test
 	@Order(5)
-	//@Disabled
+	void testUpdateBookImage() {
+		
+		try {
+			MultipartFile file = null;
+			List<Book> books = bookService.findAll();
+			int num = -1;
+			int photoBookId = -1;
+            for(Book book : books) {
+            	if(book.getId() > num) {
+            	   num = book.getId();
+            	}
+            	if(book.getPhoto() != null) {
+            		photoBookId = book.getId();
+            		System.out.println("FOUND IMAGE BOOK with id: "+book.getId()+" image name: "+book.getPhoto());
+            	}
+            }
+            file = createMultipartFileFromURL("https://cdn.pixabay.com/photo/2012/03/01/00/55/flowers-19830_1280.jpg", num+1);
+            assertTrue(bookService.updateBookImage(file, photoBookId));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	@Test
+	@Order(6)
+	void testFavouriteBooks() {
+		Random rand = new Random();
+		List<UserInfo> users = userService.getAllUsers();
+		
+		int userId = users.get(rand.nextInt(users.size())).getUserId();
+		
+		List<Book> allBooks = bookService.findAll();
+		
+		int randomBookId = allBooks.get(rand.nextInt(allBooks.size())).getId();
+		
+		UserInfo userInfo = bookService.addBookToFavorites(userId, randomBookId);
+		
+		assertEquals(userId, userInfo.getUserId());
+		
+		int bookWithImageId = bookService.findByName("New Book With Image").getId();
+		
+		userInfo = bookService.addBookToFavorites(userId, bookWithImageId);
+		
+		int anotherTitleBookId = bookService.findByName("Another Title").getId();
+		
+		userInfo = bookService.addBookToFavorites(userId, anotherTitleBookId);
+		
+		for(Book book : userInfo.getFavoriteBooks()) {
+			if(book.getId() == randomBookId) {
+				assertEquals(randomBookId, book.getId());
+			} else
+				if(book.getId() == bookWithImageId) {
+					assertEquals(bookWithImageId, book.getId());
+				} else
+					if(book.getId() == anotherTitleBookId) {
+						assertEquals(anotherTitleBookId, book.getId());
+					}
+		}
+		
+		userInfo = bookService.removeBookFromFavorites(userId, randomBookId);
+		
+		for(Book book : userInfo.getFavoriteBooks()) {
+			assertFalse(book.getId() == randomBookId);
+		}
+	}
+	
+	@Test
+	@Order(7)
 	void testDeleteBooks() {
 		List<Book> books = bookService.findAll();
 		
@@ -254,10 +326,10 @@ public class BookServiceTest {
 			if(book.getTitle().equals("New Book With Image")) {				
 				bookService.deleteBook(book.getId());
 			}
-			if(book.getTitle().equals("Another Title")) {				
+			if(book.getTitle().equals("Another Title")) {			
 				bookService.deleteBook(book.getId());
 			}
-			if(book.getTitle().equals("The Dark Half")) {				
+			if(book.getTitle().equals("The Dark Half")) {			
 				bookService.deleteBook(book.getId());
 			}
 		}

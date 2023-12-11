@@ -368,6 +368,8 @@ public class BookService {
 			Book savedBook = null;
 			
 			String fileName = StringUtils.cleanPath(file.getOriginalFilename());
+			
+			System.out.println("REPLACED WITH FILENAME: "+ fileName);
 			newBook.setPhoto(fileName);
 	        		
 	        Path uploadPath = Paths.get(uploadDir);
@@ -412,6 +414,15 @@ public class BookService {
 					e.printStackTrace();
 				}
 			}
+			
+			 // Find users who have the book in their favoriteBooks collection
+		    List<User> usersWithBook = userRepo.findByFavoriteBooksContaining(book);
+
+		    // Remove the book from each user's favoriteBooks collection
+		    for (User user : usersWithBook) {
+		        user.getFavoriteBooks().remove(book);
+		        userRepo.save(user); // Make sure to save the user after modifying the collection
+		    }
 			
 			// Get the associated category
 			Category category = book.getCategory();

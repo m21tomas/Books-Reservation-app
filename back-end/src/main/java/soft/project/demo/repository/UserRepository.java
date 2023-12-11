@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import soft.project.demo.enums.Role;
+import soft.project.demo.model.Book;
 import soft.project.demo.model.User;
 
 public interface UserRepository extends JpaRepository<User, Integer> {
@@ -15,6 +16,8 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
 	void deleteByUsername(String username);
 	
-	@Query("SELECT u FROM User u LEFT JOIN Authority a ON u.id=a.user.id WHERE a.authority=?1")
+	@Query("SELECT u FROM User u INNER JOIN Authority a ON u.id=a.user.id WHERE a.authority=?1")
 	List<User> findUsersByAuthority(Role role);
+	
+	List<User> findByFavoriteBooksContaining(Book book);
 }
