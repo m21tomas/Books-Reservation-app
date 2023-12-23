@@ -53,9 +53,9 @@ public class FirstAdmin {
 			managersRoles.add("READER");
 			UserDTO firstManager = new UserDTO(managersRoles, "manager@manager.lt", "manager@manager.lt", "manager@manager.lt");
 
-			userService.createUser(firstAdmin);
-			userService.createUser(firstUser);
-			userService.createUser(firstManager);
+			userService.createUser(firstAdmin, 0);
+			userService.createUser(firstUser, 0);
+			userService.createUser(firstManager, 0);
 		}
 		else LOG.info("There already exist users which Role is - {}", Role.ADMIN.toString());
 	}

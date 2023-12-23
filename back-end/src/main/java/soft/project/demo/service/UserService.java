@@ -5,13 +5,9 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.session.SessionInformation;
-import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +22,7 @@ import soft.project.demo.model.UserInfo;
 import soft.project.demo.repository.AuthorityRepository;
 import soft.project.demo.repository.UserRepository;
 import soft.project.demo.utility.CustomPasswordEncoder;
+import soft.project.demo.utility.JwtUtility;
 
 @Service
 public class UserService {
@@ -40,8 +37,7 @@ public class UserService {
 	private CustomPasswordEncoder passwordEncoder;
 	
 	@Autowired
-	@Lazy
-	private SessionRegistry sessionRegistry;
+	private JwtUtility jwtUtility;
 	
 	/**
 	 * Finds user with a specified username. Don't return User entity via REST.
@@ -62,7 +58,7 @@ public class UserService {
 	 * @return User entity (includes sensitive data)
 	 */
 	@Transactional
-	public User createUser(UserDTO userData) {
+	public User createUser(UserDTO userData, int mode) {
 		
 		checkUserDataFields(userData);
 		
@@ -76,11 +72,17 @@ public class UserService {
         
 		newUser.setEmail(userData.getEmail());
 		List<Authority> authority = new ArrayList<>();
-		for(String str : userData.getRoles()) {
-			Authority auth = new Authority();
-			auth.setAuthority(Role.valueOf(str));
+		Authority auth = new Authority();
+		if(mode == 1) {
+			auth.setAuthority(Role.READER);
 			authority.add(auth);
-		}	
+		}
+		else {
+			for(String str : userData.getRoles()) {
+				auth.setAuthority(Role.valueOf(str));
+				authority.add(auth);
+			}
+		}
 		newUser.setAuthorities(authority);
 		newUser.setUsername(userData.getUsername());
 		newUser.setPassword(passwordEncoder.getPasswordEncoder().encode(userData.getPassword()));
@@ -205,7 +207,7 @@ public class UserService {
 	 * @param username
 	 */
 	@Transactional
-	public void deleteUser(String username) {
+	public void deleteUser(String username, String token) {
 
 		User user = findByUsername(username);
 		String userRole = null;
@@ -219,10 +221,10 @@ public class UserService {
 			List<String> roles = new ArrayList<>();
 			roles.add("ADMIN");
 			createUser(new UserDTO(roles, "admin@admin.lt", "admin@admin.lt",
-					passwordEncoder.getPasswordEncoder().encode("admin@admin.lt")));
+					passwordEncoder.getPasswordEncoder().encode("admin@admin.lt")), 0);
 		} 
 		
-		expireSession(user);
+		jwtUtility.revokeToken(userRole);
 
 		userRepo.deleteByUsername(username);
 	}
@@ -233,6 +235,7 @@ public class UserService {
 	 * 
 	 * @param user
 	 */
+	/*
 	private void expireSession(User user) {
 
 		List<Object> principals = sessionRegistry.getAllPrincipals();
@@ -245,5 +248,5 @@ public class UserService {
 			}
 		}
 	}
-
+	*/
 }

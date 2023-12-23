@@ -13,6 +13,14 @@ const UserNavBar = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   useEffect(() => {
+    console.log("UserNavBar mounted");
+    // Add any other logging or logic you want to perform when the component mounts
+    return () => {
+      console.log("UserNavBar unmounted");
+    };
+  }, []);
+
+  useEffect(() => {
     if (user && user.jwt) {
       setCurrentUser(jwt_decode(user.jwt).sub);
     }
@@ -40,24 +48,34 @@ const UserNavBar = () => {
         <div style={{ padding: "1em" }}>{currentUser}</div>
         {user && user.jwt ? (
           <Button
-            variant="outline-secondary"
-            className="logout-button"
-            onClick={() => {
-              fetch(`${apiEndpoint}/api/auth/logout`).then((response) => {
-                if (response.status === 200) {
-                  user.setJwt(null);
-                  Cookies.remove("jwt", {
-                    domain: "localhost",
-                    path: "/",
-                    expires: 1,
-                  });
-                  navigate("/");
-                }
+          variant="outline-secondary"
+          className="logout-button"
+          onClick={async () => {
+            try {
+              const response = await fetch(`${apiEndpoint}/api/auth/logout`, {
+                method: "GET",
+                credentials: "include", // Include credentials for cookie handling
               });
-            }}
-          >
-            Logout
-          </Button>
+        
+              if (response.status === 200) {
+                user.setJwt(null);
+                Cookies.remove("jwt", {
+                  domain: "localhost",
+                  path: "/",
+                  expires: 1,
+                });
+                navigate("/");
+                console.log("After navigate");
+              } else {
+                console.error("Logout error(inner):", response.statusText);
+              }
+            } catch (error) {
+              console.error("Logout error:(outer)", error);
+            }
+          }}
+        >
+          Logout
+        </Button>
         ) : (
           <></>
         )}

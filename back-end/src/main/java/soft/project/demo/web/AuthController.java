@@ -22,12 +22,18 @@ import org.springframework.web.bind.annotation.RestController;
 
 import ch.qos.logback.core.util.Duration;
 import io.jsonwebtoken.ExpiredJwtException;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import soft.project.demo.dto.AuthCredentialsRequest;
+import soft.project.demo.model.RevokedToken;
 import soft.project.demo.model.User;
+import soft.project.demo.service.RevokedTokensService;
 import soft.project.demo.utility.JwtUtility;
 
 @RestController
 @RequestMapping("/api/auth")
+@Api(value = "Authentification Controller")
 public class AuthController {
 	
 	private Logger LOG = LoggerFactory.getLogger(AuthController.class);
@@ -37,9 +43,13 @@ public class AuthController {
 	private JwtUtility jwtUtil;
 	@Value("${cookies.domain}")
     private String domain;
+	@Autowired
+	private RevokedTokensService revokedService;
 	
 	@PostMapping("/login")
-	public ResponseEntity<?> login (@RequestBody AuthCredentialsRequest request){
+	@ApiOperation(value = "Login to Book Reservation Application")
+	public ResponseEntity<?> login (
+			@ApiParam(value = "Username and Password properties object", required = true) @RequestBody AuthCredentialsRequest request){
 		try {
             Authentication authenticate = authenticationManager
             	.authenticate(
@@ -61,13 +71,7 @@ public class AuthController {
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, cookie.toString())
                     .body(token);
-            /*
-            return ResponseEntity.ok()
-                    .header(
-                    HttpHeaders.AUTHORIZATION,
-                    jwtUtil.generateToken(user))
-                    .body(user);
-            */
+
         } catch (BadCredentialsException ex) {
         	LOG.error("LOGIN failed, \n exception: {}", ex.toString());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -76,7 +80,8 @@ public class AuthController {
 	}
 	
 	@GetMapping("/validate")
-	public ResponseEntity<?> validateToken (@CookieValue(name = "jwt") String token, @AuthenticationPrincipal User user) {
+	@ApiOperation(value = "Validate token")
+	public ResponseEntity<?> validateToken (@ApiParam(value = "Jwt cookie string value", required = true) @CookieValue(name = "jwt") String token, @AuthenticationPrincipal User user) {
 		LOG.info("/validate endpoint reached");
 		try {
 			Boolean isTokenValid = jwtUtil.validateToken(token, user);
@@ -90,7 +95,16 @@ public class AuthController {
 	}
 	
 	@GetMapping("/logout")
-    public ResponseEntity<?> logout () {
+	@ApiOperation(value = "Logout of the Book Reservation Application")
+    public ResponseEntity<?> logout (@ApiParam(value = "Jwt cookie string value", required = true) 
+    	@CookieValue(name = "jwt") String token, @AuthenticationPrincipal User user) {
+		RevokedToken revokedToken = revokedService.createRevokedToken(token, user);
+		if(revokedService.getRevokedTokenById(revokedToken.getId()).getToken().equals(token)) {
+			LOG.info("The token is revoked");
+		}
+		else {
+			LOG.error("The token is not revoked");
+		}
         ResponseCookie cookie = ResponseCookie.from("jwt", "")
                 .domain(domain)
                 .path("/")

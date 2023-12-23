@@ -10,7 +10,7 @@ const UserProvider = ({ children }) => {
   const [isValid, setIsValid] = useState(null);
 
   useEffect (() => {
-    console.log("JWT in UserProvider:", jwt);
+    //console.log("JWT in UserProvider:", jwt);
     if(jwt){
       ajax(`${apiEndpoint}/api/auth/validate`, "get", jwt)
         .then((isValid) => {

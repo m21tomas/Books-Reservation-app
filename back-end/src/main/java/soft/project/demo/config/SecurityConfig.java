@@ -19,10 +19,14 @@ import org.springframework.web.filter.CorsFilter;
 
 import jakarta.servlet.http.HttpServletResponse;
 import soft.project.demo.utility.CustomPasswordEncoder;
+import springfox.documentation.builders.PathSelectors;
+import springfox.documentation.builders.RequestHandlerSelectors;
+import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spring.web.plugins.Docket;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true) // Enable global method security
+@EnableMethodSecurity(securedEnabled = true) // Enable global method security
 public class SecurityConfig {
 	
 	@Autowired
@@ -66,7 +70,7 @@ public class SecurityConfig {
 		
 		return http.cors(cors -> corsFilter()).csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(auth -> auth
-	            .requestMatchers("/api/auth/**", "/api/verify").permitAll()
+	            .requestMatchers("/api/auth/**", "/api/verify", "/api/users/createReader").permitAll()
 	            .anyRequest().authenticated())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.exceptionHandling(exception -> exception.authenticationEntryPoint((request, response, ex) -> {
@@ -98,5 +102,14 @@ public class SecurityConfig {
         config.addAllowedMethod("*");
         source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);
+    }
+    
+    @Bean
+    public Docket api() {
+        return new Docket(DocumentationType.SWAGGER_2)
+                .select()
+                .apis(RequestHandlerSelectors.basePackage("soft.project.demo")) // Set your controller package
+                .paths(PathSelectors.any())
+                .build();
     }
 }
