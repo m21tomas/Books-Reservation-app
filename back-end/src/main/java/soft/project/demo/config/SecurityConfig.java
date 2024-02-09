@@ -26,7 +26,7 @@ import springfox.documentation.spring.web.plugins.Docket;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(securedEnabled = true) // Enable global method security
+@EnableMethodSecurity(securedEnabled = true)
 public class SecurityConfig {
 	
 	@Autowired

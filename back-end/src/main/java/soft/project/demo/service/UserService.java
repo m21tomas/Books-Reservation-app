@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +23,6 @@ import soft.project.demo.model.UserInfo;
 import soft.project.demo.repository.AuthorityRepository;
 import soft.project.demo.repository.UserRepository;
 import soft.project.demo.utility.CustomPasswordEncoder;
-import soft.project.demo.utility.JwtUtility;
 
 @Service
 public class UserService {
@@ -35,9 +35,6 @@ public class UserService {
 	
 	@Autowired
 	private CustomPasswordEncoder passwordEncoder;
-	
-	@Autowired
-	private JwtUtility jwtUtility;
 	
 	/**
 	 * Finds user with a specified username. Don't return User entity via REST.
@@ -72,17 +69,20 @@ public class UserService {
         
 		newUser.setEmail(userData.getEmail());
 		List<Authority> authority = new ArrayList<>();
-		Authority auth = new Authority();
+		
 		if(mode == 1) {
+			Authority auth = new Authority();
 			auth.setAuthority(Role.READER);
 			authority.add(auth);
 		}
 		else {
 			for(String str : userData.getRoles()) {
+				Authority auth = new Authority();
 				auth.setAuthority(Role.valueOf(str));
 				authority.add(auth);
 			}
 		}
+		 
 		newUser.setAuthorities(authority);
 		newUser.setUsername(userData.getUsername());
 		newUser.setPassword(passwordEncoder.getPasswordEncoder().encode(userData.getPassword()));
@@ -114,13 +114,27 @@ public class UserService {
 	}
 	
 	@Transactional(readOnly = true)
-	public UserInfo findUserById(Integer id) {
+	public UserInfo findUserById(Integer id, String pName) {
 		User foundUser = userRepo.findById(id).orElse(null);
 		UserInfo foundUserDto = null;
+		boolean admin = false;
+		boolean sameUsername = false;
 		if(foundUser == null) {
 			throw new NonExistingUserException("No user with id: "+id.toString());
 		}
 		else {
+			for(GrantedAuthority auth : foundUser.getAuthorities()) {
+				if(auth.getAuthority().equals(Role.ADMIN)){
+					admin = true;
+					break;
+				}
+			}
+			if(!admin) {
+				if(foundUser.getUsername().equals(pName)) {
+					sameUsername = true;
+				}
+			}
+			if(admin || sameUsername)
 			foundUserDto = new UserInfo(foundUser.getId(), foundUser.getAuthorities(),  foundUser.getUsername(), foundUser.getEmail(),
 					                    foundUser.getReservations(), foundUser.getFavoriteBooks());
 		}
@@ -207,7 +221,7 @@ public class UserService {
 	 * @param username
 	 */
 	@Transactional
-	public void deleteUser(String username, String token) {
+	public void deleteUser(String username) {
 
 		User user = findByUsername(username);
 		String userRole = null;
@@ -223,10 +237,10 @@ public class UserService {
 			createUser(new UserDTO(roles, "admin@admin.lt", "admin@admin.lt",
 					passwordEncoder.getPasswordEncoder().encode("admin@admin.lt")), 0);
 		} 
-		
-		jwtUtility.revokeToken(userRole);
 
 		userRepo.deleteByUsername(username);
+		
+		SecurityContextHolder.clearContext();	
 	}
 	
 	/**

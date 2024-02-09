@@ -59,7 +59,7 @@ public class MyControllerAdvice extends ResponseEntityExceptionHandler {
 		Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("message", el.getMessage());
-		return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+		return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
 	}
 	
 	@ExceptionHandler(ExistingBookCategoryException.class)

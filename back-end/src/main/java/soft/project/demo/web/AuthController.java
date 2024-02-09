@@ -47,7 +47,7 @@ public class AuthController {
 	private RevokedTokensService revokedService;
 	
 	@PostMapping("/login")
-	@ApiOperation(value = "Login to Book Reservation Application")
+	@ApiOperation(value = "Login")
 	public ResponseEntity<?> login (
 			@ApiParam(value = "Username and Password properties object", required = true) @RequestBody AuthCredentialsRequest request){
 		try {
@@ -84,12 +84,17 @@ public class AuthController {
 	public ResponseEntity<?> validateToken (@ApiParam(value = "Jwt cookie string value", required = true) @CookieValue(name = "jwt") String token, @AuthenticationPrincipal User user) {
 		LOG.info("/validate endpoint reached");
 		try {
-			Boolean isTokenValid = jwtUtil.validateToken(token, user);
-			LOG.info("VALIDATE successful, response boolean: {}", isTokenValid.toString());
-			return new ResponseEntity<Boolean>(isTokenValid, HttpStatus.OK);
-		}
+	        if (user != null) {
+	            Boolean isTokenValid = jwtUtil.validateToken(token, user);
+	            LOG.info("User: "+user.getUsername() +", validation successful");
+	            return new ResponseEntity<Boolean>(isTokenValid, HttpStatus.OK);
+	        } else {
+	            LOG.warn("User not found for token validation");
+	            return ResponseEntity.ok(false);
+	        }
+	    }
 		catch (ExpiredJwtException e) {
-			LOG.error("VALIDATE failed, token expired \n response exception: {}", e.toString());
+			LOG.error("VALIDATE failed, token expired \n response exception: {}", e.getMessage());
             return ResponseEntity.ok(false);
         }
 	}
