@@ -3,6 +3,7 @@ package soft.project.demo.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -67,37 +68,43 @@ public class UserService {
 		
 		User newUser = new User();
         
-		newUser.setEmail(userData.getEmail());
-		List<Authority> authority = new ArrayList<>();
-		
-		if(mode == 1) {
-			Authority auth = new Authority();
-			auth.setAuthority(Role.READER);
-			authority.add(auth);
-		}
-		else {
-			for(String str : userData.getRoles()) {
-				Authority auth = new Authority();
-				auth.setAuthority(Role.valueOf(str));
-				authority.add(auth);
-			}
-		}
-		 
-		newUser.setAuthorities(authority);
+		newUser.setEmail(userData.getEmail()); 
+//		newUser.setAuthorities(authority);
 		newUser.setUsername(userData.getUsername());
 		newUser.setPassword(passwordEncoder.getPasswordEncoder().encode(userData.getPassword()));
+		
 		User returnUser = userRepo.save(newUser);
-		for(Authority role : authority) {
-			role.setUser(returnUser);
-			authRepo.save(role);
-		}
+		
+		List<Authority> authorityList = new ArrayList<>();
+		
+		if (mode == 1) {
+			Authority auth = new Authority();
+	        auth.setUser(returnUser);
+	        auth.setAuthority(Role.READER);
+	        authorityList.add(auth);
+		} else {
+		    for (String authItem : userData.getAuthorities()) {
+		        Authority auth = new Authority();
+		        auth.setUser(returnUser);
+		        auth.setAuthority(Role.valueOf(authItem));
+		        authorityList.add(auth);
+		    }
+	    }
+
+	    authRepo.saveAll(authorityList);
+		
 		return returnUser;
 	}
 	
 	private static void checkUserDataFields (UserDTO userData) {
 		List<String> empty = new ArrayList<>();
+		for (String authItem : userData.getAuthorities()) {
+			if(authItem.isEmpty()) {
+				empty.add("Authority field \"roles\"");
+				break;
+			}
+		}
 		if(userData.getEmail().isEmpty()) empty.add("email");
-		if(userData.getRoles().isEmpty()) empty.add("roles");
 		if(userData.getPassword().isEmpty()) empty.add("password");
 		if(userData.getUsername().isEmpty()) empty.add("username");
 		
@@ -113,9 +120,31 @@ public class UserService {
 		}
 	}
 	
+	private UserInfo mapUserToDTO(User user) {
+		UserInfo userDTO = new UserInfo();
+	    userDTO.setUserId(user.getId());
+	    userDTO.setUsername(user.getUsername());
+	    userDTO.setPassword(user.getPassword());
+	    userDTO.setEmail(user.getEmail());
+	    userDTO.setReservations(user.getReservations());
+	    userDTO.setFavoriteBooks(user.getFavoriteBooks());
+	    
+	    List<String> userRoles = new ArrayList<>();
+	    
+	    userRoles = user.getAuthorities().stream()
+	    				.map(auth -> auth.getAuthority())
+	    				.collect(Collectors.toList());
+	    
+	    userDTO.setRoles(userRoles);
+	    
+	    return userDTO;
+	}
+
+
 	@Transactional(readOnly = true)
 	public UserInfo findUserById(Integer id, String pName) {
 		User foundUser = userRepo.findById(id).orElse(null);
+		User checkPrincipal = findByUsername(pName);
 		UserInfo foundUserDto = null;
 		boolean admin = false;
 		boolean sameUsername = false;
@@ -123,20 +152,26 @@ public class UserService {
 			throw new NonExistingUserException("No user with id: "+id.toString());
 		}
 		else {
-			for(GrantedAuthority auth : foundUser.getAuthorities()) {
-				if(auth.getAuthority().equals(Role.ADMIN)){
-					admin = true;
-					break;
+			if(checkPrincipal != null) {
+				for(GrantedAuthority auth : checkPrincipal.getAuthorities()) {
+					if(auth.getAuthority().equals(Role.ADMIN.getRole())) {
+						admin = true;
+						break;
+					}
 				}
+			}
+			else {
+				throw new NonExistingUserException("Principal is null");
 			}
 			if(!admin) {
 				if(foundUser.getUsername().equals(pName)) {
 					sameUsername = true;
 				}
 			}
-			if(admin || sameUsername)
-			foundUserDto = new UserInfo(foundUser.getId(), foundUser.getAuthorities(),  foundUser.getUsername(), foundUser.getEmail(),
-					                    foundUser.getReservations(), foundUser.getFavoriteBooks());
+			if(admin || sameUsername) {
+				
+				foundUserDto = mapUserToDTO(foundUser);
+			}
 		}
 		return foundUserDto ;
 	}
@@ -151,9 +186,7 @@ public class UserService {
 		List<UserInfo> responseUsers = new ArrayList<>();
 		
 		for(User usr : usersDb) {
-			UserInfo userDto = new UserInfo(usr.getId(), usr.getAuthorities(),  usr.getUsername(), usr.getEmail(),
-					                        usr.getReservations(), usr.getFavoriteBooks());
-			responseUsers.add(userDto);
+			responseUsers.add(mapUserToDTO(usr));
 		}
 		
 		return responseUsers;
@@ -171,9 +204,8 @@ public class UserService {
 		Page<UserInfo> dtoPage = users.map(new Function<User, UserInfo>() {
 			@Override
 			public UserInfo apply(User user) {
-				UserInfo dto = new UserInfo(user.getId(), user.getAuthorities(),  user.getUsername(), user.getEmail(),
-						                    user.getReservations(), user.getFavoriteBooks());
-				return dto;
+				mapUserToDTO(user);
+				return mapUserToDTO(user);
 			}
 
 		});
@@ -181,9 +213,31 @@ public class UserService {
 	}
 	
 	@Transactional
-	public boolean updateUser (Integer id, UserDTO userData) {
+	public boolean updateUser (Integer id, UserDTO userData, String pName) {
 		
 		User userToChange = userRepo.findById(id).orElse(null);
+		
+		User checkPrincipal = findByUsername(pName);
+
+		boolean reader = true;
+		boolean sameUsername = false;
+		
+		if(checkPrincipal != null) {
+			for(GrantedAuthority auth : checkPrincipal.getAuthorities()) {
+				if(auth.getAuthority().equals(Role.ADMIN.getRole())) {
+					reader = false;
+					break;
+				}
+			}
+		}
+		else {
+			throw new NonExistingUserException("Principal is null");
+		}
+		if(reader) {
+			if(userToChange.getUsername().equals(pName)) {
+				sameUsername = true;
+			}
+		}
 		
 		if(userToChange == null) {
 			throw new ExistingUserException("No such user for its data to be updated.");
@@ -191,24 +245,38 @@ public class UserService {
 		
 		checkUserDataFields(userData);
 		
-        
-		userToChange.setEmail(userData.getEmail());
-		List<Authority> authority = new ArrayList<>();
-		for(String str : userData.getRoles()) {
-			Authority auth = new Authority();
-			auth.setAuthority(Role.valueOf(str));
-			authority.add(auth);
-		}	
-		userToChange.setAuthorities(authority);
-		userToChange.setUsername(userData.getUsername());
-		userToChange.setPassword(passwordEncoder.getPasswordEncoder().encode(userData.getPassword()));
-		User returnUser = userRepo.save(userToChange);
-		for(Authority role : authority) {
-			role.setUser(returnUser);
-			authRepo.save(role);
+		if(!reader || sameUsername) {
+			userToChange.setEmail(userData.getEmail());	
+			userToChange.setUsername(userData.getUsername());
+			userToChange.setPassword(passwordEncoder.getPasswordEncoder().encode(userData.getPassword()));
+			User returnUser = userRepo.save(userToChange);
+			
+			List<Authority> authorityList = new ArrayList<>();
+			
+			authRepo.deleteByUserId(userToChange.getId());
+			
+			if(!reader) {		
+				for (String authItem : userData.getAuthorities()) {
+					Authority auth = new Authority();
+					auth.setUser(returnUser);
+					auth.setAuthority(Role.valueOf(authItem));
+					authorityList.add(auth);
+				}
+			}
+			else if(sameUsername) {
+				Authority auth = new Authority();
+				auth.setUser(returnUser);
+				auth.setAuthority(Role.READER);
+				authorityList.add(auth);
+			}
+	
+			authRepo.saveAll(authorityList);
+			
+			return true;
 		}
-		
-		return true;
+		else {
+			throw new ExistingUserException("As a simple user you cannot change another user data");
+		}
 	}
 	
 	/**
@@ -226,16 +294,18 @@ public class UserService {
 		User user = findByUsername(username);
 		String userRole = null;
 		for(GrantedAuthority auth : user.getAuthorities()) {
-			if(auth.getAuthority().equals(Role.ADMIN.getRole())) {
-				userRole = auth.getAuthority();
-			}
+			userRole = auth.getAuthority();
 		}
 
 		if (userRole.equals("Administrator") && authRepo.findByAuthority(Role.ADMIN).size() == 1) {
-			List<String> roles = new ArrayList<>();
-			roles.add("ADMIN");
-			createUser(new UserDTO(roles, "admin@admin.lt", "admin@admin.lt",
-					passwordEncoder.getPasswordEncoder().encode("admin@admin.lt")), 0);
+			
+			List<String> adminAuthorities = new ArrayList<>();
+			
+			adminAuthorities.add("ADMIN");
+			
+			UserDTO firstAdmin = new UserDTO(adminAuthorities, "admin@admin.lt", "admin@admin.lt","admin@admin.lt");
+			
+			createUser(firstAdmin, 0);
 		} 
 
 		userRepo.deleteByUsername(username);

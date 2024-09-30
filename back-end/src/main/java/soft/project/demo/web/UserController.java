@@ -2,6 +2,7 @@ package soft.project.demo.web;
 
 
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -14,9 +15,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,16 +30,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import soft.project.demo.dto.CreateUserDto;
 import soft.project.demo.dto.UserDTO;
+import soft.project.demo.exception.ValidationException;
 import soft.project.demo.model.User;
 import soft.project.demo.model.UserInfo;
 import soft.project.demo.service.UserService;
 
 @RestController
 @RequestMapping(path = "/api/users")
-@Api(value = "User Controller")
+@Tag(name = "User Controller")
 public class UserController {
 
 	private static final Logger LOG = LoggerFactory.getLogger(UserController.class);
@@ -49,7 +55,7 @@ public class UserController {
 	 * Create new user from login screen
 	 */
 	@PostMapping("/createReader")
-	@ApiOperation(value = "Create reader")
+	@Operation(summary = "Create reader")
 	public ResponseEntity<String> createUser(@RequestBody UserDTO userInfo){
 		
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -63,15 +69,38 @@ public class UserController {
 			}
 		}
 		LOG.error("New user [{}] NOT created", userInfo.getUsername());
-		return new ResponseEntity<String>("User not ceated", HttpStatus.INTERNAL_SERVER_ERROR);
+		return new ResponseEntity<String>("User not created", HttpStatus.INTERNAL_SERVER_ERROR);
 	}
+	
+	@PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody @Valid CreateUserDto createUserDto, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+//        	return ResponseEntity
+//                    .badRequest()
+//                    .body(new MessageResponse(bindingResult.getAllErrors().toString()));
+        	throw new ValidationException(bindingResult);
+        }
+        
+        List<String> authority = new ArrayList<>();
+        authority.add(createUserDto.getRole().toString());
+		UserDTO testUSerDto = new UserDTO(authority, createUserDto.getEmail(), "testUser22", createUserDto.getPassword());
+		// userService.createUser(testUSerDto, 0);
+		if(testUSerDto.getUsername().equals("testUser22")) {
+			LOG.info("New user [{}] created", "testUser22");
+			return new ResponseEntity<String>("New test user created", HttpStatus.CREATED);
+		}
+		else {
+			LOG.warn("New user [{}] IS NOT created", "testUser22");
+			return new ResponseEntity<String>("User not created", HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+    }
 	
 	/**
 	 * Admin creates new user 
 	 */
-	@Secured({"ROLE_ADMIN"})
+	@Secured({"Administrator"})
 	@PostMapping("/createUser")
-	@ApiOperation(value = "Create reader or admin")
+	@Operation(summary = "Create reader or admin")
 	public ResponseEntity<String> createUserByAdmin(@RequestBody UserDTO userInfo){
 		
 		String principalName = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -84,12 +113,13 @@ public class UserController {
 		}
 
 		LOG.error("[{}]: New user [{}] NOT created", principalName, userInfo.getUsername());
-		return new ResponseEntity<String>("User not ceated", HttpStatus.INTERNAL_SERVER_ERROR);
+		return new ResponseEntity<String>("User not created", HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 	
-	@Secured({"ROLE_ADMIN, ROLE_READER"})
+	//@Secured({"ROLE_Administrator", "ROLE_Reader"})
+	@PreAuthorize("hasAuthority('Administrator') || hasAuthority('Reader')")
 	@GetMapping("/{id}")
-	@ApiOperation(value = "Get User Information")
+	@Operation(summary = "Get User Information")
 	public ResponseEntity<?> getUserData(@PathVariable Integer id){
 		String principalUsername = SecurityContextHolder.getContext().getAuthentication().getName();
 		
@@ -113,9 +143,9 @@ public class UserController {
 	 *  Admin gets all users information
 	 *  @return List of all users
 	 */
-	@Secured({"ROLE_ADMIN"})
+	@Secured({"Administrator"})
 	@GetMapping("/allUsers")
-	@ApiOperation(value = "Get All Users")
+	@Operation(summary = "Get All Users")
 	public ResponseEntity<List<UserInfo>> getAllUsers (){
 		String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
 		
@@ -128,19 +158,19 @@ public class UserController {
 	/**
 	 * User updates its account data
 	 */
-	@Secured({"ROLE_ADMIN, ROLE_READER"})
+	@Secured({"Administrator", "Reader"})
 	@PutMapping("/updateAccount/{id}")
-	@ApiOperation(value = "Update user")
+	@Operation(summary = "Update user")
 	public ResponseEntity<String> updateUserData (@PathVariable Integer id, @RequestBody UserDTO userData){
 		String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
 		
-		if(userService.updateUser(id, userData)) {
+		if(userService.updateUser(id, userData, currentUsername)) {
 			LOG.info("[{}]: User data updated", currentUsername);
 			return new ResponseEntity<String>("User data updated", HttpStatus.OK);
 		}
 		else {
 			LOG.error("[{}]: User data updated", currentUsername);
-			return new ResponseEntity<String>("User data updated", HttpStatus.BAD_REQUEST);
+			return new ResponseEntity<String>("User data not updated", HttpStatus.BAD_REQUEST);
 		}
 	}
 	
@@ -148,14 +178,14 @@ public class UserController {
 	 * Returns a page of all users. Method only accessible to ADMIN users
 	 * @return page of all users
 	 */
-	@Secured({ "ROLE_ADMIN" })
+	@Secured({ "Administrator" })
 	@GetMapping(path = "/admin/allusers")
-	@ApiOperation(value = "Get a page of all users")
+	@Operation(summary = "Get a page of all users")
 	public Page<UserInfo> getAllUsers(@RequestParam("page") int page, @RequestParam("size") int size) {
 		
 		String adminNickname = SecurityContextHolder.getContext().getAuthentication().getName();
 
-		Sort.Order order = new Sort.Order(Sort.Direction.DESC, "userId");
+		Sort.Order order = new Sort.Order(Sort.Direction.DESC, "id");
 
 		Pageable pageable = PageRequest.of(page, size, Sort.by(order));
 
@@ -168,9 +198,9 @@ public class UserController {
 	 * Deletes user with specified username. Method only accessible to ADMIN users
 	 * @param username
 	 */
-	@Secured({ "ROLE_ADMIN" })
+	@Secured({ "Administrator" })
 	@DeleteMapping(path = "/admin/delete/{username}")
-	@ApiOperation(value = "Delete user")
+	@Operation(summary = "Delete user")
 	public ResponseEntity<String> deleteUser(@PathVariable final String username) {
 		
 		String adminNickname = SecurityContextHolder.getContext().getAuthentication().getName();	

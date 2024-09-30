@@ -3,14 +3,19 @@ package soft.project.demo.utility;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +31,8 @@ import soft.project.demo.repository.RevokedTokenRepository;
 public class JwtUtility implements Serializable {
 	
 	private static final long serialVersionUID = -5551412898633203438L;
+	
+	private Logger LOG = LoggerFactory.getLogger(JwtUtility.class);
 	
 	@Autowired
     private RevokedTokenRepository revokedTokenRepository;
@@ -46,6 +53,18 @@ public class JwtUtility implements Serializable {
 	public Date getExpirationDateFromToken(String token) {
 		return getClaimFromToken(token, Claims::getExpiration);
 	}
+	
+	@SuppressWarnings("unchecked")
+	public Collection<String> getAuthoritiesFromToken(String token) {
+	    return getClaimFromToken(token, claims -> (Collection<String>) claims.get("authorities"));
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Collection<? extends GrantedAuthority> getRolesFromToken(String token) {
+	    Claims claims = Jwts.parser().setSigningKey(secret).parseClaimsJws(token).getBody();
+	    return (Collection<? extends GrantedAuthority>) claims.get("authorities");
+	}
+
 	
 	public <T> T getClaimFromToken(String token, Function<Claims, T> claimsResolver) {
 		final Claims claims = getAllClaimsFromToken(token);
@@ -87,10 +106,12 @@ public class JwtUtility implements Serializable {
 	
 	public String generateToken(UserDetails userDetails) {
 		Map<String, Object> claims = new HashMap<>();
-		claims.put("authorities", userDetails.getAuthorities()
-				.stream()
-				.map(auth -> auth.getAuthority())
-				.collect(Collectors.toList()));
+		Set<String> distinctAuthorities = userDetails.getAuthorities()
+	            .stream()
+	            .map(GrantedAuthority::getAuthority)
+	            .collect(Collectors.toSet());
+
+	    claims.put("authorities", distinctAuthorities);
 		return doGenerateToken(claims, userDetails.getUsername());
 	}
 
@@ -108,10 +129,36 @@ public class JwtUtility implements Serializable {
 		return (!isTokenExpired(token) || ignoreTokenExpiration(token));
 	}
 	
-	public Boolean validateToken (String token, UserDetails userDetails) {
-		if (!StringUtils.hasText(token) || isTokenRevoked(token))
-            return false;
-		final String username = getUsernameFromToken(token);
-		return (userDetails != null && username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+	public Boolean validateToken(String token, UserDetails userDetails) {
+		//LOG.info("Validating token: {}", token);
+	    if (!StringUtils.hasText(token) || !token.startsWith("eyJ")) {
+	        LOG.warn("Invalid token format or empty: {}", token);
+	        return false;
+	    }
+	    
+	    if (isTokenRevoked(token)) {
+	        LOG.warn("The token is revoked");
+	        return false;
+	    }
+	    
+	    final String username = getUsernameFromToken(token);
+	    if (userDetails == null) {
+	        LOG.warn("UserDetails is null");
+	        return false;
+	    }
+
+	    if (!username.equals(userDetails.getUsername())) {
+	        LOG.warn("Username from token does not match UserDetails username");
+	        return false;
+	    }
+
+	    if (isTokenExpired(token)) {
+	        LOG.warn("Token has expired");
+	        return false;
+	    }
+
+	    return true;
 	}
+
+
 }

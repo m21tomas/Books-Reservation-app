@@ -17,16 +17,11 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
-import jakarta.servlet.http.HttpServletResponse;
 import soft.project.demo.utility.CustomPasswordEncoder;
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.plugins.Docket;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(securedEnabled = true)
+@EnableMethodSecurity(prePostEnabled = true, securedEnabled = true)
 public class SecurityConfig {
 	
 	@Autowired
@@ -37,55 +32,43 @@ public class SecurityConfig {
 	
 	@Autowired
 	CustomPasswordEncoder passwordEncoder;
+	
+	private static final String[] AUTH_WHITELIST = {
+            // for Swagger UI v2
+            "/v2/api-docs",
+            "/swagger-ui.html",
+            "/swagger-resources",
+            "/swagger-resources/**",
+            "/configuration/ui",
+            "/configuration/security",
+            "/webjars/**",
+            // for Swagger UI v3 (OpenAPI)
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/api-docs/**"
+    };
 
     @Bean
     AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
 	     return authenticationConfiguration.getAuthenticationManager();
 	}
 	
-	@Autowired
+    @Autowired
 	protected void configureAuthentication (AuthenticationManagerBuilder auth) throws Exception{
 		auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder.getPasswordEncoder());
 	}
-	
+    
 	@Bean
-	protected SecurityFilterChain configureAuthorization (HttpSecurity http) throws Exception{		
-		/*
-		http.cors().and().csrf().disable()
-		    .authorizeHttpRequests()
-		    .requestMatchers("/api/auth/**", "/api/verify").permitAll()
-		    .anyRequest().authenticated()
-			.and()
-			.sessionManagement()
-		    .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-		    .and()
-		    .exceptionHandling()
-			.authenticationEntryPoint((request, response, ex) -> {
-				   response.sendError(HttpServletResponse.SC_UNAUTHORIZED, ex.getMessage());
-			})
-			.and()
-			.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);	
-		return http.build();
-		*/
-		
+	protected SecurityFilterChain configureAuthorization (HttpSecurity http) throws Exception{			
 		return http.cors(cors -> corsFilter()).csrf(csrf -> csrf.disable())
 				.authorizeHttpRequests(auth -> auth
-	            .requestMatchers("/api/auth/**", "/api/verify", "/api/users/createReader").permitAll()
+				.requestMatchers(AUTH_WHITELIST).permitAll()
+	            .requestMatchers("/api/auth/**", "/api/verify", "/api/users/createReader", "/api/users/register").permitAll()
 	            .anyRequest().authenticated())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.exceptionHandling(exception -> exception.authenticationEntryPoint((request, response, ex) -> {
-					   response.sendError(HttpServletResponse.SC_UNAUTHORIZED, ex.getMessage());
-				}))
+				
 				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)	
 	            .build();
-	   
-		/*
-		return http.cors(cors -> corsFilter()).csrf(csrf -> csrf.disable())
-				.authorizeHttpRequests(auth -> auth
-			            .requestMatchers("/**").permitAll()
-			            )
-                .build();
-        */
 	}
 
     // Used by Spring Security if CORS is enabled.
@@ -98,18 +81,10 @@ public class SecurityConfig {
         config.addAllowedOriginPattern("*");
         config.addAllowedHeader("*");
         config.addExposedHeader("Set-Cookie");
-        config.addExposedHeader("Authorization");
         config.addAllowedMethod("*");
         source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);
     }
     
-    @Bean
-    public Docket api() {
-        return new Docket(DocumentationType.SWAGGER_2)
-                .select()
-                .apis(RequestHandlerSelectors.basePackage("soft.project.demo")) // Set your controller package
-                .paths(PathSelectors.any())
-                .build();
-    }
+    
 }

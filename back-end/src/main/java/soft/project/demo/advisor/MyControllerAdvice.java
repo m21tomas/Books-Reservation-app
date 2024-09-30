@@ -1,16 +1,18 @@
 package soft.project.demo.advisor;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import soft.project.demo.exception.EmptyInputException;
 import soft.project.demo.exception.ExistingBookCategoryException;
@@ -18,13 +20,14 @@ import soft.project.demo.exception.ExistingBookException;
 import soft.project.demo.exception.ExistingBookReservationException;
 import soft.project.demo.exception.ExistingUserException;
 import soft.project.demo.exception.InvalidIsbnException;
-import soft.project.demo.exception.NonExistingUserException;
 import soft.project.demo.exception.NoDataFoundException;
 import soft.project.demo.exception.NonExistingBookCategoryException;
 import soft.project.demo.exception.NonExistingBookException;
+import soft.project.demo.exception.NonExistingUserException;
+import soft.project.demo.exception.ValidationException;
 
 @ControllerAdvice
-public class MyControllerAdvice extends ResponseEntityExceptionHandler {
+public class MyControllerAdvice {
 	
 	@ExceptionHandler(NoDataFoundException.class)
     public ResponseEntity<Object> handleNodataFoundException(
@@ -127,4 +130,26 @@ public class MyControllerAdvice extends ResponseEntityExceptionHandler {
 	    body.put("message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
 	}
+	
+//	@ExceptionHandler(MethodArgumentNotValidException.class)
+//    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+//        Map<String, String> errors = new HashMap<>();
+//        ex.getBindingResult().getAllErrors().forEach((error) -> {
+//            String fieldName = ((FieldError) error).getField();
+//            String errorMessage = error.getDefaultMessage();
+//            errors.put(fieldName, errorMessage);
+//        });
+//        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+//    }
+	
+	@ExceptionHandler(ValidationException.class)
+    public ResponseEntity<Object> handleValidationException(ValidationException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    }
 }

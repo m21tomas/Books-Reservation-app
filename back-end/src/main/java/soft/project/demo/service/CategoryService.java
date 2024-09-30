@@ -1,10 +1,14 @@
 package soft.project.demo.service;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,7 +41,20 @@ public class CategoryService {
 	
 	@Transactional(readOnly = true)
 	public List<Category> findAllCategories () {
-		return categoryRepo.findAll();
+		List<Category> categories = new ArrayList<>(categoryRepo.findAll());
+		Collections.sort(categories, (a, b) -> a.getId() < b.getId() ? -1
+				                               : a.getId() == b.getId() ? 0 : 1);
+		return categories;
+	}
+	
+	public Page<Category> getPageOfAllCategories(Pageable pageable){
+		return categoryRepo.findAll(pageable);
+	}
+	
+	@SuppressWarnings("unused")
+	private CategoryDTO mapCategoryToDto (Category cat) {
+		CategoryDTO dto = new CategoryDTO(cat.getName());
+		return dto;
 	}
 	
 	@Transactional
@@ -62,10 +79,11 @@ public class CategoryService {
 		Category eCat = findById(id);
 		
 		if(eCat != null) {
-			if(catDto != null) {	
+			if(!catDto.getCategoryName().isBlank()) {	
 				eCat.setName(catDto.getCategoryName());
-				categoryRepo.save(eCat);
-				return true;
+				Category changedCategory = categoryRepo.save(eCat);
+				
+				return changedCategory.getName().equals(catDto.getCategoryName());
 			}
 			else {
 				throw new NullPointerException("Category object is null or wrong or there is no category");

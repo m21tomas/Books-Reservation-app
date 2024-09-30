@@ -30,7 +30,6 @@ public class User implements UserDetails{
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
-	
 	@NonNull
 	private String username;
 	@NonNull
@@ -38,13 +37,17 @@ public class User implements UserDetails{
 	@NonNull
 	private String email;
 	
-	@OneToMany(fetch = FetchType.EAGER, mappedBy = "user")
-	private List<Authority> authorities = new ArrayList<>();	
+//	@OneToMany(fetch = FetchType.EAGER, mappedBy = "user", cascade = {CascadeType.ALL})
+//	private List<Authority> authorities = new ArrayList<>();	
 	
-	@OneToMany(mappedBy = "user", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true)
+	@OneToMany(fetch = FetchType.EAGER, mappedBy = "user", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true)
+	private List<Authority> authorities = new ArrayList<>();
+
+	
+	@OneToMany(fetch = FetchType.EAGER, mappedBy = "user", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true)
     private List<Reservation> reservations = new ArrayList<>();
 	
-	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
+	@OneToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
     private Set<Book> favoriteBooks = new HashSet<>();
 	
 	public User() {}
@@ -55,7 +58,7 @@ public class User implements UserDetails{
 		this.password = password;
 		this.email = email;
 	}
-	
+
 	public void addReservation(Reservation reservation) {
         reservations.add(reservation);
         reservation.setUser(this);
@@ -65,8 +68,6 @@ public class User implements UserDetails{
         reservations.remove(reservation);
         reservation.setUser(null);
     }
-    
-    
 
 	@Override
 	public int hashCode() {
@@ -120,6 +121,10 @@ public class User implements UserDetails{
 		this.email = email;
 	}
 
+	public void setAuthorities(List<Authority> authorities) {
+		this.authorities = authorities;
+	}
+
 	public Set<Book> getFavoriteBooks() {
 		return favoriteBooks;
 	}
@@ -141,15 +146,6 @@ public class User implements UserDetails{
 		return "User [id=" + id + ", username=" + username + ", password=" + password + ", email="
 				+ email + "]";
 	}
-	
-	public void setAuthorities(List<Authority> authorities) {
-		this.authorities = authorities;
-	}
-
-	@Override
-	public Collection<? extends GrantedAuthority> getAuthorities() {
-		return authorities;
-	}
 
 	@Override
 	public boolean isAccountNonExpired() {
@@ -169,5 +165,10 @@ public class User implements UserDetails{
 	@Override
 	public boolean isEnabled() {
 		return true;
+	}
+
+	@Override
+	public Collection<? extends GrantedAuthority> getAuthorities() {
+		return authorities;
 	}
 }

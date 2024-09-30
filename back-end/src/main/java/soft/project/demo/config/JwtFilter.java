@@ -2,7 +2,6 @@ package soft.project.demo.config;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +31,21 @@ public class JwtFilter extends OncePerRequestFilter{
 	@Autowired
 	private JwtUtility jwtUtil;
 
+//	private Collection<? extends GrantedAuthority> mapRoles(Collection<? extends GrantedAuthority> collection) {
+//	    return collection.stream()
+//	            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getAuthority()))
+//	            .collect(Collectors.toList());
+//	}
+//	private Collection<? extends GrantedAuthority> mapRoles(Collection<? extends GrantedAuthority> collection) {
+//        return collection.stream()
+//        		//public Authority(Role authority, String permission, Set<Integer> permissionObjectIds)
+//                .map(role -> {
+//                    // Assuming Authority is your custom class
+//                    return new Authority(Role.ADMIN, "", new Set<Integer>());
+//                })
+//                .collect(Collectors.toList());
+//    }
+
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 			throws ServletException, IOException {
@@ -55,6 +69,12 @@ public class JwtFilter extends OncePerRequestFilter{
         		.orElse(null);
         */
 		
+		// Check if the request is for Swagger
+	    if (request.getRequestURI().contains("/swagger") || request.getRequestURI().contains("/api-docs")) {
+	        chain.doFilter(request, response);
+	        return;
+	    }
+		
 		//	System.out.println("Request header: \n"+request.getCookies().toString());
 		if (request.getCookies() == null) {
             chain.doFilter(request, response);
@@ -72,6 +92,7 @@ public class JwtFilter extends OncePerRequestFilter{
         }
 		
         String token = jwtOpt.get().getValue();
+        
         UserDetails userDetails = null;
         try {
             userDetails = userRepo
@@ -91,8 +112,7 @@ public class JwtFilter extends OncePerRequestFilter{
         UsernamePasswordAuthenticationToken
             authentication = new UsernamePasswordAuthenticationToken(
                 userDetails, null,
-                userDetails == null ?
-                    List.of() : userDetails.getAuthorities()
+                userDetails.getAuthorities() //userDetails == null ? List.of() : mapRoles(userDetails.getAuthorities())
             );
 
         authentication.setDetails(

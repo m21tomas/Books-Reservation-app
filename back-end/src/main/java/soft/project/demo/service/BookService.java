@@ -476,7 +476,7 @@ public class BookService {
 			throw new NonExistingBookException("The book with id: "+bookId+" was not added to favorites set");
 		}
 		
-		UserInfo userinfo = userService.findUserById(userId);
+		UserInfo userinfo = userService.findUserById(userId, user.getUsername());
 		
 		return userinfo;
 	}
@@ -514,7 +514,7 @@ public class BookService {
 			throw new NonExistingBookException("The book with id: "+bookId+" was not removed from the favorites set");
 		}
 		
-		UserInfo userinfo = userService.findUserById(userId);
+		UserInfo userinfo = userService.findUserById(userId, user.getUsername());
 		
 		return userinfo;
 	}

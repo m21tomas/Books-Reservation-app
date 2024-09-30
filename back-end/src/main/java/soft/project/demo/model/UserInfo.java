@@ -1,14 +1,11 @@
 package soft.project.demo.model;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-import org.springframework.security.core.GrantedAuthority;
-
 public class UserInfo {
 	private Integer userId;
-	private Collection<? extends GrantedAuthority> roles;
+	private List<String> roles;
 	private String username;
 	private String password;
 	private String email;
@@ -17,7 +14,7 @@ public class UserInfo {
 	
 	public UserInfo() {}
 	
-	public UserInfo(Integer userId, Collection<? extends GrantedAuthority> roles, String username, String password, String email) {
+	public UserInfo(Integer userId, List<String> roles, String username, String password, String email) {
 		super();
 		this.userId = userId;
 		this.roles = roles;
@@ -26,7 +23,7 @@ public class UserInfo {
 		this.email = email;
 	}
 
-	public UserInfo(Integer userId, Collection<? extends GrantedAuthority> roles, String username, String email) {
+	public UserInfo(Integer userId, List<String> roles, String username, String email) {
 		super();
 		this.userId = userId;
 		this.roles = roles;
@@ -34,7 +31,7 @@ public class UserInfo {
 		this.email = email;
 	}
 	
-	public UserInfo(Integer userId, Collection<? extends GrantedAuthority> roles, String username, String email, 
+	public UserInfo(Integer userId, List<String> roles, String username, String email, 
 			        List<Reservation> reservations, Set<Book> favoriteBooks) {
 		super();
 		this.userId = userId;
@@ -53,11 +50,11 @@ public class UserInfo {
 		this.userId = userId;
 	}
 
-	public Collection<? extends GrantedAuthority> getRoles() {
+	public List<String> getRoles() {
 		return roles;
 	}
 
-	public void setRoles(Collection<? extends GrantedAuthority> roles) {
+	public void setRoles(List<String> roles) {
 		this.roles = roles;
 	}
 

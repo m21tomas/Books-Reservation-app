@@ -1,14 +1,14 @@
 package soft.project.demo.model;
 
-
+import java.util.Objects;
 
 import org.springframework.security.core.GrantedAuthority;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Entity;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -23,10 +23,11 @@ public class Authority implements GrantedAuthority {
 	private Integer id;
 	@Enumerated(EnumType.STRING)
 	private Role authority;
+	
 	@JsonIgnore
 	@ManyToOne(optional = false)
 	private User user;
-	
+
 	public Authority() {}
 	
 	public Authority(Role authority) {
@@ -56,6 +57,23 @@ public class Authority implements GrantedAuthority {
 
 	public void setAuthority(Role authority) {
 		this.authority = authority;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(authority, user);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Authority other = (Authority) obj;
+		return authority == other.authority && Objects.equals(user, other.user);
 	}
 	
 }

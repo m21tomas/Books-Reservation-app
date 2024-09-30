@@ -50,7 +50,7 @@ public class ReservationServiceTest {
 		
 		Optional<String> getUsername = users.stream()
 		        .filter(user -> user.getRoles().size() == 1)
-		        .filter(user -> user.getRoles().stream().anyMatch(auth -> auth.getAuthority().equals("Reader")))
+		        .filter(user -> user.getRoles().stream().anyMatch(auth -> auth.equals("Reader")))
 		        .map(UserInfo::getUsername)
 		        .findFirst();
 		

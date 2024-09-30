@@ -4,7 +4,7 @@ import java.util.List;
 
 public class UserDTO {
 	
-	private List<String> roles;
+	private List<String> authorities;
 	private String email;
 	private String username;
 	private String password;
@@ -13,20 +13,20 @@ public class UserDTO {
 
 	}
 
-	public UserDTO(List<String> roles, String email, String username, String password) {
+	public UserDTO(List<String> authorities, String email, String username, String password) {
 		super();
-		this.roles = roles;
+		this.authorities = authorities;
 		this.email = email;
 		this.username = username;
 		this.password = password;
 	}
 
-	public List<String> getRoles() {
-		return roles;
+	public List<String> getAuthorities() {
+		return authorities;
 	}
 
-	public void setRoles(List<String> roles) {
-		this.roles = roles;
+	public void setAuthorities(List<String> authorities) {
+		this.authorities = authorities;
 	}
 
 	public String getEmail() {
@@ -52,6 +52,4 @@ public class UserDTO {
 	public void setPassword(String password) {
 		this.password = password;
 	}
-	
-	
 }
